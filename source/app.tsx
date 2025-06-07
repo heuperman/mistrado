@@ -80,22 +80,37 @@ export default function App() {
 			setLoading(false);
 			return;
 		} else {
-			setMessages(prev => [...prev, {role: 'user', content: prompt}]);
-			// Ensure messages store is up-to-date
+			// Add user message to history
+			const updatedMessages: MistralMessage[] = [...messages, {role: 'user', content: prompt}];
+			setMessages(updatedMessages);
 
-			const result = await getResponse(messages);
-			for await (const chunk of result) {
-				const streamText = chunk.data.choices[0]?.delta.content;
-				setResponse(prev => prev + (streamText || ''));
+			try {
+				// Use updated messages for API call
+				const result = await getResponse(updatedMessages);
+				let accumulatedResponse = '';
+				
+				for await (const chunk of result) {
+					const streamText = chunk.data.choices[0]?.delta.content;
+					if (streamText) {
+						accumulatedResponse += streamText;
+						setResponse(prev => prev + streamText);
+					}
+				}
+
+				// Add assistant response to history
+				const assistantMessage: MistralMessage = {
+					role: 'assistant',
+					content: accumulatedResponse,
+				};
+				setMessages(prev => [...prev, assistantMessage]);
+			} catch (err) {
+				setError(
+					`Error getting response: ${
+						err instanceof Error ? err.message : String(err)
+					}`,
+				);
 			}
 
-			setMessages(prev => [
-				...prev,
-				{
-					role: 'assistant',
-					content: response,
-				},
-			]);
 			setLoading(false);
 		}
 	};
