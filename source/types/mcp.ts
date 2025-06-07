@@ -45,7 +45,14 @@ type MCPResourceContent = {
 		| {blob: string; uri: string; mimeType?: string};
 };
 
-type MCPContent = MCPTextContent | MCPImageContent | MCPResourceContent;
+// Add support for additional content types from MCP SDK
+type MCPAudioContent = {
+	type: 'audio';
+	data: string;
+	mimeType: string;
+};
+
+type MCPContent = MCPTextContent | MCPImageContent | MCPResourceContent | MCPAudioContent;
 
 export type MCPCallToolResult =
 	| {

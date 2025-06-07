@@ -48,8 +48,23 @@ export function toMistralMessage(
 					type: 'text',
 					text: item.text,
 				} as const;
+			} else if (item.type === 'image') {
+				return {
+					type: 'text',
+					text: `[Image: ${item.mimeType}]`,
+				} as const;
+			} else if (item.type === 'audio') {
+				return {
+					type: 'text',
+					text: `[Audio: ${item.mimeType}]`,
+				} as const;
+			} else if (item.type === 'resource') {
+				return {
+					type: 'text',
+					text: `[Resource: ${item.resource.uri}]`,
+				} as const;
 			} else {
-				throw new Error(`Unsupported content type: ${item.type}`);
+				throw new Error(`Unsupported content type: ${(item as any).type}`);
 			}
 		});
 	} else if ('toolResult' in callToolResult && callToolResult.toolResult) {
