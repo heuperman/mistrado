@@ -1,10 +1,15 @@
 import {MCPClient} from './mcpClient.js';
+import {MCPServer} from '../types/mcp.js';
 import {
-	MCPServer,
-	MCPCallToolResult,
-} from '../types/mcp.js';
-import {MistralTool, MistralToolCall} from '../types/mistral.js';
-import {toMistralTools, toMCPToolCall} from '../utils/converters.js';
+	MistralTool,
+	MistralToolCall,
+	MistralToolMessage,
+} from '../types/mistral.js';
+import {
+	toMistralTools,
+	toMCPToolCall,
+	toMistralMessage,
+} from '../utils/converters.js';
 
 export class MCPManager {
 	private clients = new Map<string, MCPClient>();
@@ -36,14 +41,15 @@ export class MCPManager {
 		return this.availableTools;
 	}
 
-	async callTool(toolCall: MistralToolCall): Promise<MCPCallToolResult> {
+	async callTool(toolCall: MistralToolCall): Promise<MistralToolMessage> {
 		const mcpRequest = toMCPToolCall(toolCall);
-		
+
 		// Find which server has this tool by iterating through clients
 		for (const [, client] of this.clients) {
 			try {
 				const result = await client.callTool(mcpRequest);
-				return result;
+				const message = toMistralMessage(toolCall.id || '', result);
+				return message;
 			} catch (error) {
 				// If tool not found in this server, try next one
 				if (error instanceof Error && error.message.includes('Unknown tool')) {
@@ -54,7 +60,9 @@ export class MCPManager {
 			}
 		}
 
-		throw new Error(`Tool ${mcpRequest.name} not found in any connected servers`);
+		throw new Error(
+			`Tool ${mcpRequest.name} not found in any connected servers`,
+		);
 	}
 
 	async disconnect(): Promise<void> {

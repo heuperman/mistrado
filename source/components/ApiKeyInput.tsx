@@ -11,17 +11,19 @@ export default function ApiKeyInput({setApiKey}: ApiKeyInputProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const handleSubmit = async (apiKeyInput: string) => {
+	const handleSubmit = async (input: string) => {
 		setLoading(true);
 		setError(null);
 
-		const apiKey = apiKeyInput.trim();
-		if (!apiKey) {
+		const cleanedInput = input.trim();
+		if (!cleanedInput) {
 			setError('API Key cannot be empty.');
+		} else if (cleanedInput === '/exit' || cleanedInput === '/quit') {
+			process.exit(0);
 		} else {
 			try {
-				await setSecret({key: 'MISTRAL_API_KEY', value: apiKey});
-				setApiKey(apiKey);
+				await setSecret({key: 'MISTRAL_API_KEY', value: cleanedInput});
+				setApiKey(cleanedInput);
 			} catch (err) {
 				setError(
 					`Error saving API Key: ${

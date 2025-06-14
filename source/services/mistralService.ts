@@ -1,47 +1,62 @@
 import {Mistral} from '@mistralai/mistralai';
-import {EventStream} from '@mistralai/mistralai/lib/event-streams.js';
 import {
-	CompletionEvent,
+	AssistantMessage,
 	Tool,
 } from '@mistralai/mistralai/models/components/index.js';
 import {MistralMessage} from '../types/mistral.js';
-import {MCPManager} from './mcpManager.js';
 
-let client: Mistral | null = null;
-let mcpManager: MCPManager | null = null;
+export type ResponseResult = {
+	error: null | string;
+	assistantMessages: AssistantMessage[];
+};
 
-export async function initializeMistralClient(apiKey: string): Promise<void> {
-	if (!apiKey) {
-		throw new Error('API key is required to initialize Mistral client.');
-	}
-	client = new Mistral({apiKey});
+export class MistralService {
+	private client: Mistral | null = null;
 
-	// Initialize MCP manager with built-in servers
-	mcpManager = new MCPManager();
-	await mcpManager.initializeBuiltinServers();
-}
-
-export async function getResponse(
-	messages: MistralMessage[],
-	tools: Tool[] = [],
-): Promise<EventStream<CompletionEvent>> {
-	if (!client) {
-		throw new Error(
-			'Mistral client not initialized. Please ensure API key is set.',
-		);
+	constructor(apiKey: string) {
+		if (!apiKey) {
+			throw new Error('API key is required to initialize Mistral client.');
+		}
+		this.client = new Mistral({apiKey});
 	}
 
-	// Get available MCP tools and merge with provided tools
-	const mcpTools = mcpManager?.getAvailableTools() || [];
-	const allTools = [...tools, ...mcpTools];
+	async getResponse(
+		messages: MistralMessage[],
+		tools: Tool[] = [],
+	): Promise<ResponseResult> {
+		if (!this.client) {
+			throw new Error(
+				'Mistral client not initialized. Please ensure API key is set.',
+			);
+		}
 
-	return client.chat.stream({
-		model: 'devstral-small-2505',
-		messages,
-		tools: allTools,
-	});
-}
+		const response = await this.client.chat.complete({
+			model: 'devstral-small-2505',
+			messages,
+			tools,
+		});
 
-export function getMCPManager(): MCPManager | null {
-	return mcpManager;
+		if (response.choices.length === 0) {
+			const error = 'No response from Mistral API.';
+			return {error, assistantMessages: []};
+		}
+
+		let assistantMessages: AssistantMessage[] = [];
+
+		for (const choice of response.choices) {
+			if (choice.finishReason === 'error') {
+				const error = 'An error occurred during processing.';
+				return {error, assistantMessages: []};
+			}
+
+			assistantMessages.push(choice.message);
+
+			return {error: null, assistantMessages};
+		}
+
+		return {
+			error: 'Unexpected response format from Mistral API.',
+			assistantMessages: [],
+		};
+	}
 }
