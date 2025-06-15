@@ -7,6 +7,17 @@ import {MistralService} from './services/mistralService.js';
 import Hero from './components/Hero.js';
 import {MistralMessage, MistralTool, MistralToolCall} from './types/mistral.js';
 import {MCPManager} from './services/mcpManager.js';
+import {getMainSystemPrompt} from './prompts/system.js';
+import {execSync} from 'child_process';
+
+function isGitRepo() {
+	try {
+		execSync('git rev-parse --git-dir', {stdio: 'ignore'});
+		return true;
+	} catch (error) {
+		return false;
+	}
+}
 
 const handleCommand = (commandInput: string) => {
 	const command = commandInput.trim().toLowerCase();
@@ -118,7 +129,7 @@ export default function App() {
 			setSessionMessages(updatedMessages);
 
 			// Continue conversation with tool results
-			handleRequest(service, updatedMessages, tools);
+			await handleRequest(service, updatedMessages, tools);
 		}
 	};
 
@@ -167,6 +178,19 @@ export default function App() {
 		initializeMCPManager();
 	}, []);
 
+	useEffect(() => {
+		if (!sessionMessages.length) {
+			setSessionMessages([
+				getMainSystemPrompt({
+					workingDirectoryPath: process.cwd(),
+					isGitRepo: isGitRepo(),
+					platform: process.platform,
+					todayDate: new Date(),
+				}),
+			]);
+		}
+	}, []);
+
 	const handleSubmit = async (promptInput: string) => {
 		setLoading(true);
 		setOutput('');
@@ -201,7 +225,7 @@ export default function App() {
 			}
 
 			try {
-				handleRequest(mistralService, updatedMessages, tools);
+				await handleRequest(mistralService, updatedMessages, tools);
 			} catch (err) {
 				setErrorOutput(
 					`Error getting response: ${
