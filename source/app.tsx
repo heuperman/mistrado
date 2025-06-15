@@ -31,7 +31,6 @@ const handleCommand = (commandInput: string) => {
 		case 'logout':
 			deleteSecret('MISTRAL_API_KEY');
 			return 'Logged out successfully. Please restart the app to enter a new API Key.';
-		case 'clear':
 		default:
 			return `Unknown command: ${command}`;
 	}

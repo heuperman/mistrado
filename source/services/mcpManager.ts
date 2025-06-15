@@ -27,14 +27,20 @@ export class MCPManager {
 	}
 
 	async initializeBuiltinServers(): Promise<void> {
-		// Initialize filesystem server with current working directory
-		const filesystemServer: MCPServer = {
-			name: 'filesystem',
-			command: 'node',
-			args: ['dist/tools/filesystem.js', process.cwd()],
-		};
+		const servers: MCPServer[] = [
+			{
+				name: 'readServer',
+				command: 'node',
+				args: ['dist/tools/read.js'],
+			},
+			{
+				name: 'listServer',
+				command: 'node',
+				args: ['dist/tools/list.js'],
+			},
+		];
 
-		await this.addServer(filesystemServer);
+		Promise.all(servers.map(server => this.addServer(server)));
 	}
 
 	getAvailableTools(): MistralTool[] {
