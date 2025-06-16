@@ -7,13 +7,13 @@ import {
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-class FileReaderServer {
+class ReadToolServer {
 	private server: Server;
 
 	constructor() {
 		this.server = new Server(
 			{
-				name: 'file-reader-server',
+				name: 'read-tool-server',
 				version: '0.1.0',
 			},
 			{
@@ -24,15 +24,6 @@ class FileReaderServer {
 		);
 
 		this.setupToolHandlers();
-		this.setupErrorHandling();
-	}
-
-	private setupErrorHandling(): void {
-		this.server.onerror = error => console.error('[MCP Error]', error);
-		process.on('SIGINT', async () => {
-			await this.server.close();
-			process.exit(0);
-		});
 	}
 
 	private setupToolHandlers(): void {
@@ -243,5 +234,5 @@ class FileReaderServer {
 	}
 }
 
-const server = new FileReaderServer();
+const server = new ReadToolServer();
 server.run().catch(() => process.exit(1));

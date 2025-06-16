@@ -17,7 +17,7 @@ class LSToolServer {
 		this.server = new Server(
 			{
 				name: 'ls-tool-server',
-				version: '1.0.0',
+				version: '0.1.0',
 			},
 			{
 				capabilities: {
@@ -27,7 +27,6 @@ class LSToolServer {
 		);
 
 		this.setupToolHandlers();
-		this.setupErrorHandling();
 	}
 
 	private setupToolHandlers() {
@@ -199,17 +198,6 @@ class LSToolServer {
 				isError: true,
 			};
 		}
-	}
-
-	private setupErrorHandling() {
-		this.server.onerror = error => {
-			console.error('[MCP Error]', error);
-		};
-
-		process.on('SIGINT', async () => {
-			await this.server.close();
-			process.exit(0);
-		});
 	}
 
 	async run() {

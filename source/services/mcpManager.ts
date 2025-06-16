@@ -38,6 +38,16 @@ export class MCPManager {
 				command: 'node',
 				args: ['dist/tools/list.js'],
 			},
+			{
+				name: 'writeServer',
+				command: 'node',
+				args: ['dist/tools/write.js'],
+			},
+			{
+				name: 'editServer',
+				command: 'node',
+				args: ['dist/tools/edit.js'],
+			},
 		];
 
 		Promise.all(servers.map(server => this.addServer(server)));
