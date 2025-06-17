@@ -30,6 +30,7 @@ On first run, you'll be prompted to enter your Mistral API key, which will be se
 
 - `/help` - Show available commands
 - `/logout` - Clear stored API key and logout
+- `/usage` - Show token usage per model
 - `/exit` or `/quit` - Exit the application
 
 ## Development

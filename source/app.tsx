@@ -19,7 +19,17 @@ function isGitRepo() {
 	}
 }
 
-const handleCommand = (commandInput: string) => {
+const handleCommand = (
+	commandInput: string,
+	usage: Record<
+		string,
+		{
+			promptTokens: number;
+			completionTokens: number;
+			totalTokens: number;
+		}
+	> | null,
+) => {
 	const command = commandInput.trim().toLowerCase();
 
 	switch (command) {
@@ -27,7 +37,16 @@ const handleCommand = (commandInput: string) => {
 		case 'quit':
 			process.exit(0);
 		case 'help':
-			return 'Available commands: /exit, /quit, /help, /logout';
+			return 'Available commands: /exit, /quit, /help, /usage, /logout';
+		case 'usage':
+			return usage
+				? Object.entries(usage)
+						.map(
+							([model, data]) =>
+								`Model: ${model}\nPrompt Tokens: ${data.promptTokens}\nCompletion Tokens: ${data.completionTokens}\nTotal Tokens: ${data.totalTokens}`,
+						)
+						.join('\n\n')
+				: 'No usage data available.';
 		case 'logout':
 			deleteSecret('MISTRAL_API_KEY');
 			return 'Logged out successfully. Please restart the app to enter a new API Key.';
@@ -48,13 +67,21 @@ export default function App() {
 	const [errorOutput, setErrorOutput] = useState<string | null>(null);
 	const [statusOutput, setStatusOutput] = useState<string | null>(null);
 	const [sessionMessages, setSessionMessages] = useState<MistralMessage[]>([]);
+	const [sessionUsage, setSessionUsage] = useState<Record<
+		string,
+		{
+			promptTokens: number;
+			completionTokens: number;
+			totalTokens: number;
+		}
+	> | null>(null);
 
 	const handleRequest = async (
 		service: MistralService,
 		messages: MistralMessage[],
 		tools: MistralTool[] = [],
 	) => {
-		const {error, assistantMessages} = await service.getResponse(
+		const {error, assistantMessages, usage, model} = await service.getResponse(
 			messages,
 			tools,
 		);
@@ -63,6 +90,28 @@ export default function App() {
 			setErrorOutput(error);
 			setLoading(false);
 			return;
+		}
+
+		if (usage) {
+			setSessionUsage(prevUsage => {
+				if (!prevUsage) {
+					return {[model]: usage};
+				} else if (prevUsage[model]) {
+					return {
+						...prevUsage,
+						[model]: {
+							promptTokens: prevUsage[model].promptTokens + usage.promptTokens,
+							completionTokens:
+								prevUsage[model].completionTokens + usage.completionTokens,
+							totalTokens: prevUsage[model].totalTokens + usage.totalTokens,
+						},
+					};
+				}
+				return {
+					...prevUsage,
+					[model]: usage,
+				};
+			});
 		}
 
 		let updatedMessages: MistralMessage[] = messages;
@@ -199,7 +248,7 @@ export default function App() {
 		const prompt = promptInput.trim();
 
 		if (prompt.startsWith('/')) {
-			const result = handleCommand(prompt.slice(1));
+			const result = handleCommand(prompt.slice(1), sessionUsage);
 			setOutput(result);
 			setLoading(false);
 			return;

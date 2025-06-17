@@ -5,10 +5,25 @@ import {
 } from '@mistralai/mistralai/models/components/index.js';
 import {MistralMessage} from '../types/mistral.js';
 
-export type ResponseResult = {
-	error: null | string;
+type SuccessResponse = {
+	error: null;
 	assistantMessages: AssistantMessage[];
+	model: string;
+	usage: {
+		promptTokens: number;
+		completionTokens: number;
+		totalTokens: number;
+	};
 };
+
+type ErrorResponse = {
+	error: string;
+	assistantMessages: never[];
+	model: string;
+	usage?: never;
+};
+
+export type ResponseResult = SuccessResponse | ErrorResponse;
 
 export class MistralService {
 	private client: Mistral | null = null;
@@ -24,6 +39,8 @@ export class MistralService {
 		messages: MistralMessage[],
 		tools: Tool[] = [],
 	): Promise<ResponseResult> {
+		const model = 'devstral-small-2505';
+
 		if (!this.client) {
 			throw new Error(
 				'Mistral client not initialized. Please ensure API key is set.',
@@ -31,14 +48,14 @@ export class MistralService {
 		}
 
 		const response = await this.client.chat.complete({
-			model: 'devstral-small-2505',
+			model,
 			messages,
 			tools,
 		});
 
 		if (response.choices.length === 0) {
 			const error = 'No response from Mistral API.';
-			return {error, assistantMessages: []};
+			return {error, assistantMessages: [], model};
 		}
 
 		let assistantMessages: AssistantMessage[] = [];
@@ -46,17 +63,23 @@ export class MistralService {
 		for (const choice of response.choices) {
 			if (choice.finishReason === 'error') {
 				const error = 'An error occurred during processing.';
-				return {error, assistantMessages: []};
+				return {error, assistantMessages: [], model};
 			}
 
 			assistantMessages.push(choice.message);
 
-			return {error: null, assistantMessages};
+			return {
+				error: null,
+				assistantMessages,
+				model,
+				usage: response.usage,
+			};
 		}
 
 		return {
 			error: 'Unexpected response format from Mistral API.',
 			assistantMessages: [],
+			model,
 		};
 	}
 }
