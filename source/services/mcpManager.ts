@@ -48,6 +48,11 @@ export class MCPManager {
 				command: 'node',
 				args: ['dist/tools/edit.js'],
 			},
+			{
+				name: 'multiEditServer',
+				command: 'node',
+				args: ['dist/tools/multiEdit.js'],
+			},
 		];
 
 		Promise.all(servers.map(server => this.addServer(server)));
