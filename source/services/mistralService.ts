@@ -5,15 +5,17 @@ import {
 } from '@mistralai/mistralai/models/components/index.js';
 import {MistralMessage} from '../types/mistral.js';
 
+export type TokenUsage = {
+	promptTokens: number;
+	completionTokens: number;
+	totalTokens: number;
+};
+
 type SuccessResponse = {
 	error: null;
 	assistantMessages: AssistantMessage[];
 	model: string;
-	usage: {
-		promptTokens: number;
-		completionTokens: number;
-		totalTokens: number;
-	};
+	usage: TokenUsage;
 };
 
 type ErrorResponse = {

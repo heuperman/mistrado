@@ -3,7 +3,7 @@ import {Box, Text} from 'ink';
 import TextInput from 'ink-text-input';
 import {deleteSecret, getSecret} from './services/secretsService.js';
 import ApiKeyInput from './components/ApiKeyInput.js';
-import {MistralService} from './services/mistralService.js';
+import {MistralService, TokenUsage} from './services/mistralService.js';
 import Hero from './components/Hero.js';
 import {MistralMessage, MistralTool, MistralToolCall} from './types/mistral.js';
 import {MCPManager} from './services/mcpManager.js';
@@ -19,40 +19,70 @@ function isGitRepo() {
 	}
 }
 
-const handleCommand = (
-	commandInput: string,
-	usage: Record<
-		string,
-		{
-			promptTokens: number;
-			completionTokens: number;
-			totalTokens: number;
-		}
-	> | null,
-) => {
-	const command = commandInput.trim().toLowerCase();
+const COMMANDS = ['exit', 'help', 'usage', 'logout'] as const;
+const COMMAND_ALIASES: Partial<Record<Command, string>> = {
+	exit: 'quit',
+} as const;
+const COMMAND_DESCRIPTIONS: Record<Command, string> = {
+	exit: 'Exit the application',
+	help: 'Show available commands',
+	usage: 'Show token usage statistics',
+	logout: 'Logout and clear API key',
+} as const;
 
-	switch (command) {
-		case 'exit':
-		case 'quit':
+type Command = (typeof COMMANDS)[number];
+
+function generateCommandHelp(command: Command): string {
+	return `/${command}${
+		COMMAND_ALIASES[command] ? ` (/${COMMAND_ALIASES[command]})` : ''
+	} - ${COMMAND_DESCRIPTIONS[command]}`;
+}
+
+const commandRegister: Record<
+	Command,
+	{handler: (usage: Record<string, TokenUsage> | null) => string}
+> = {
+	exit: {
+		handler: () => {
 			process.exit(0);
-		case 'help':
-			return 'Available commands: /exit, /quit, /help, /usage, /logout';
-		case 'usage':
-			return usage
+		},
+	},
+	help: {
+		handler: () =>
+			`Available commands: \n${COMMANDS.map(command =>
+				generateCommandHelp(command),
+			).join('\n')}\n\nType a command to execute it.`,
+	},
+	usage: {
+		handler: usage =>
+			usage
 				? Object.entries(usage)
 						.map(
 							([model, data]) =>
 								`Model: ${model}\nPrompt Tokens: ${data.promptTokens}\nCompletion Tokens: ${data.completionTokens}\nTotal Tokens: ${data.totalTokens}`,
 						)
 						.join('\n\n')
-				: 'No usage data available.';
-		case 'logout':
+				: 'No usage data available.',
+	},
+	logout: {
+		handler: () => {
 			deleteSecret('MISTRAL_API_KEY');
 			return 'Logged out successfully. Please restart the app to enter a new API Key.';
-		default:
-			return `Unknown command: ${command}`;
+		},
+	},
+};
+
+const handleCommand = (
+	commandInput: string,
+	usage: Record<string, TokenUsage> | null,
+) => {
+	const command = commandInput.trim().toLowerCase();
+
+	if (!command || !commandRegister[command as Command]) {
+		return `Unknown command: ${commandInput}. Type /help for available commands.`;
 	}
+
+	return commandRegister[command as Command].handler(usage);
 };
 
 export default function App() {
