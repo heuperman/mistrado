@@ -23,6 +23,8 @@ This is an Ink-based CLI application that provides a conversational interface to
 
 - **mistralService** (`source/services/mistralService.ts`): Manages Mistral AI client initialization and streaming chat responses using the `devstral-small-2505` model
 - **secretsService** (`source/services/secretsService.ts`): Handles secure storage/retrieval of API keys using keytar
+- **mcpManager** (`source/services/mcpManager.ts`): Manages MCP (Model Context Protocol) servers and tool integration
+- **mcpClient** (`source/services/mcpClient.ts`): Handles communication with individual MCP servers
 
 ### Key Patterns
 
@@ -30,7 +32,8 @@ This is an Ink-based CLI application that provides a conversational interface to
 - Implements streaming responses from Mistral API with real-time UI updates
 - Supports slash commands (`/help`, `/usage`, `/logout`, `/exit`, `/quit`)
 - Maintains conversation history as `MistralMessage[]` array
-- Type definitions separate Mistral AI types from MCP (Model Context Protocol) types
+- Integrates MCP (Model Context Protocol) servers for filesystem tools and extensions
+- Type definitions separate Mistral AI types from MCP types
 
 ### Security Notes
 

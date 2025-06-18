@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Text} from 'ink';
+import {Box, Text, useApp} from 'ink';
 import TextInput from 'ink-text-input';
 import {deleteSecret, getSecret} from './services/secretsService.js';
 import ApiKeyInput from './components/ApiKeyInput.js';
@@ -17,6 +17,16 @@ function isGitRepo() {
 	} catch (error) {
 		return false;
 	}
+}
+
+function formatUsage(usage: Record<string, TokenUsage> | null): string {
+	if (!usage) return 'No usage data available.';
+	return Object.entries(usage)
+		.map(
+			([model, data]) =>
+				`Model: ${model}\nPrompt Tokens: ${data.promptTokens}\nCompletion Tokens: ${data.completionTokens}\nTotal Tokens: ${data.totalTokens}`,
+		)
+		.join('\n\n');
 }
 
 const COMMANDS = ['exit', 'help', 'usage', 'logout'] as const;
@@ -40,40 +50,36 @@ function generateCommandHelp(command: Command): string {
 
 const commandRegister: Record<
 	Command,
-	{handler: (usage: Record<string, TokenUsage> | null) => string}
+	({
+		setOutput,
+		logAndExit,
+		usage,
+	}: {
+		setOutput: React.Dispatch<React.SetStateAction<string>>;
+		logAndExit: (message: string) => void;
+		usage: Record<string, TokenUsage> | null;
+	}) => void
 > = {
-	exit: {
-		handler: () => {
-			process.exit(0);
-		},
+	exit: ({logAndExit, usage}) => {
+		logAndExit(formatUsage(usage));
 	},
-	help: {
-		handler: () =>
-			`Available commands: \n${COMMANDS.map(command =>
-				generateCommandHelp(command),
-			).join('\n')}\n\nType a command to execute it.`,
+	help: ({setOutput}) => {
+		const commandLines = COMMANDS.map(command => generateCommandHelp(command));
+		setOutput(`Available commands: \n${commandLines.join('\n')}`);
 	},
-	usage: {
-		handler: usage =>
-			usage
-				? Object.entries(usage)
-						.map(
-							([model, data]) =>
-								`Model: ${model}\nPrompt Tokens: ${data.promptTokens}\nCompletion Tokens: ${data.completionTokens}\nTotal Tokens: ${data.totalTokens}`,
-						)
-						.join('\n\n')
-				: 'No usage data available.',
-	},
-	logout: {
-		handler: () => {
-			deleteSecret('MISTRAL_API_KEY');
-			return 'Logged out successfully. Please restart the app to enter a new API Key.';
-		},
+	usage: ({setOutput, usage}) => setOutput(formatUsage(usage)),
+	logout: ({setOutput}) => {
+		deleteSecret('MISTRAL_API_KEY');
+		setOutput(
+			'Logged out successfully. Please restart the app to enter a new API Key.',
+		);
 	},
 };
 
 const handleCommand = (
 	commandInput: string,
+	setOutput: React.Dispatch<React.SetStateAction<string>>,
+	logAndExit: (message: string) => void,
 	usage: Record<string, TokenUsage> | null,
 ) => {
 	const command = commandInput.trim().toLowerCase();
@@ -82,10 +88,11 @@ const handleCommand = (
 		return `Unknown command: ${commandInput}. Type /help for available commands.`;
 	}
 
-	return commandRegister[command as Command].handler(usage);
+	return commandRegister[command as Command]({setOutput, logAndExit, usage});
 };
 
 export default function App() {
+	const {exit} = useApp();
 	const [mistralService, setMistralService] = useState<MistralService | null>(
 		null,
 	);
@@ -105,6 +112,19 @@ export default function App() {
 			totalTokens: number;
 		}
 	> | null>(null);
+	const [shouldExit, setShouldExit] = useState(false);
+
+	const logAndExit = (message: string) => {
+		setOutput(message);
+		setShouldExit(true);
+	};
+
+	useEffect(() => {
+		if (shouldExit) {
+			exit();
+			process.exit(0);
+		}
+	}, [shouldExit, exit]);
 
 	const handleRequest = async (
 		service: MistralService,
@@ -278,8 +298,7 @@ export default function App() {
 		const prompt = promptInput.trim();
 
 		if (prompt.startsWith('/')) {
-			const result = handleCommand(prompt.slice(1), sessionUsage);
-			setOutput(result);
+			handleCommand(prompt.slice(1), setOutput, logAndExit, sessionUsage);
 			setLoading(false);
 			return;
 		} else {
