@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {Server} from '@modelcontextprotocol/sdk/server/index.js';
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import * as fs from 'fs';
-import * as path from 'path';
 import {minimatch} from 'minimatch';
 
 class LSToolServer {
-	private server: Server;
+	private readonly server: Server;
 
 	constructor() {
 		this.server = new Server(
@@ -67,7 +67,7 @@ class LSToolServer {
 				throw new Error(`Unknown tool: ${request.params.name}`);
 			}
 
-			return await this.handleLS(request.params.arguments);
+			return this.handleLS(request.params.arguments);
 		});
 	}
 
@@ -91,12 +91,12 @@ class LSToolServer {
 
 			// Validate ignore patterns
 			if (!Array.isArray(ignore)) {
-				throw new Error('Invalid ignore parameter: must be an array');
+				throw new TypeError('Invalid ignore parameter: must be an array');
 			}
 
 			for (const pattern of ignore) {
 				if (typeof pattern !== 'string') {
-					throw new Error(
+					throw new TypeError(
 						'Invalid ignore pattern: all patterns must be strings',
 					);
 				}
@@ -153,7 +153,7 @@ class LSToolServer {
 								: 'other',
 					size: entryStats.size,
 					modified: entryStats.mtime.toISOString(),
-					permissions: '0' + (entryStats.mode & parseInt('777', 8)).toString(8),
+					permissions: '0' + (entryStats.mode & 0o777).toString(8),
 				};
 
 				results.push(entryInfo);

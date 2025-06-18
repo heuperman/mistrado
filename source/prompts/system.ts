@@ -1,4 +1,4 @@
-import {SystemMessage} from '@mistralai/mistralai/models/components/index.js';
+import type {SystemMessage} from '@mistralai/mistralai/models/components/index.js';
 
 export function getMainSystemPrompt({
 	workingDirectoryPath,

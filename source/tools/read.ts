@@ -1,14 +1,14 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import {Server} from '@modelcontextprotocol/sdk/server/index.js';
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 class ReadToolServer {
-	private server: Server;
+	private readonly server: Server;
 
 	constructor() {
 		this.server = new Server(
@@ -118,7 +118,7 @@ class ReadToolServer {
 			}
 
 			// Read the file content
-			const content = await fs.readFile(filePath, 'utf-8');
+			const content = await fs.readFile(filePath, 'utf8');
 
 			// Check for empty file
 			if (content.length === 0) {
@@ -137,9 +137,7 @@ class ReadToolServer {
 			const formattedLines = selectedLines.map((line, index) => {
 				const lineNumber = startLine + index + 1; // Convert back to 1-based
 				const truncatedLine =
-					line.length > 2000
-						? line.substring(0, 2000) + '...[truncated]'
-						: line;
+					line.length > 2000 ? line.slice(0, 2000) + '...[truncated]' : line;
 				return `${lineNumber.toString().padStart(6, ' ')}\t${truncatedLine}`;
 			});
 
@@ -208,7 +206,7 @@ class ReadToolServer {
 
 	private getFileType(filePath: string): string {
 		const ext = path.extname(filePath).toLowerCase();
-		const typeMap: {[key: string]: string} = {
+		const typeMap: Record<string, string> = {
 			'.png': 'PNG Image',
 			'.jpg': 'JPEG Image',
 			'.jpeg': 'JPEG Image',

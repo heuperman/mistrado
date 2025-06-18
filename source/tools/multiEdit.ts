@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import {Server} from '@modelcontextprotocol/sdk/server/index.js';
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
-interface EditOperation {
+type EditOperation = {
 	old_string: string;
 	new_string: string;
 	replace_all?: boolean;
-}
+};
 
-interface MultiEditArgs {
+type MultiEditArgs = {
 	file_path: string;
 	edits: EditOperation[];
-}
+};
 
 class MultiEditServer {
-	private server: Server;
+	private readonly server: Server;
 
 	constructor() {
 		this.server = new Server(
@@ -96,7 +96,7 @@ class MultiEditServer {
 			}
 
 			const args = request.params.arguments as unknown as MultiEditArgs;
-			return await this.handleMultiEdit(args);
+			return this.handleMultiEdit(args);
 		});
 	}
 
@@ -115,7 +115,7 @@ class MultiEditServer {
 			// Read the current file content (or create empty content for new files)
 			let currentContent: string;
 			try {
-				currentContent = await fs.readFile(file_path, 'utf-8');
+				currentContent = await fs.readFile(file_path, 'utf8');
 			} catch (error: any) {
 				if (error.code === 'ENOENT') {
 					// File doesn't exist - this is okay if the first edit creates the file
@@ -129,8 +129,8 @@ class MultiEditServer {
 			let modifiedContent = currentContent;
 			const appliedEdits: string[] = [];
 
-			for (let i = 0; i < edits.length; i++) {
-				const edit = edits[i] as EditOperation;
+			for (const [i, edit_] of edits.entries()) {
+				const edit = edit_;
 
 				// Validate that old_string and new_string are different
 				if (edit.old_string === edit.new_string) {
@@ -146,6 +146,7 @@ class MultiEditServer {
 							`Edit ${i + 1}: old_string not found in file content`,
 						);
 					}
+
 					modifiedContent = modifiedContent
 						.split(edit.old_string)
 						.join(edit.new_string);
@@ -157,14 +158,15 @@ class MultiEditServer {
 							`Edit ${i + 1}: old_string not found in file content`,
 						);
 					}
+
 					modifiedContent =
-						modifiedContent.substring(0, index) +
+						modifiedContent.slice(0, Math.max(0, index)) +
 						edit.new_string +
-						modifiedContent.substring(index + edit.old_string.length);
+						modifiedContent.slice(Math.max(0, index + edit.old_string.length));
 				}
 
 				appliedEdits.push(
-					`Edit ${i + 1}: ${edit.replace_all ? 'Replaced all' : 'Replaced first'} occurrence of "${edit.old_string.substring(0, 50)}${edit.old_string.length > 50 ? '...' : ''}" with "${edit.new_string.substring(0, 50)}${edit.new_string.length > 50 ? '...' : ''}"`,
+					`Edit ${i + 1}: ${edit.replace_all ? 'Replaced all' : 'Replaced first'} occurrence of "${edit.old_string.slice(0, 50)}${edit.old_string.length > 50 ? '...' : ''}" with "${edit.new_string.slice(0, 50)}${edit.new_string.length > 50 ? '...' : ''}"`,
 				);
 			}
 
@@ -216,11 +218,15 @@ class MultiEditServer {
 			}
 
 			if (typeof edit.old_string !== 'string') {
-				throw new Error(`Invalid edit ${i + 1}: old_string must be a string`);
+				throw new TypeError(
+					`Invalid edit ${i + 1}: old_string must be a string`,
+				);
 			}
 
 			if (typeof edit.new_string !== 'string') {
-				throw new Error(`Invalid edit ${i + 1}: new_string must be a string`);
+				throw new TypeError(
+					`Invalid edit ${i + 1}: new_string must be a string`,
+				);
 			}
 
 			if (

@@ -1,10 +1,10 @@
-export type MCPServer = {
+export type McpServer = {
 	name: string;
 	command: string;
 	args: string[];
 };
 
-type MCPTool = {
+type McpTool = {
 	name: string;
 	description?: string;
 	inputSchema: {
@@ -13,28 +13,28 @@ type MCPTool = {
 	};
 };
 
-export type MCPListToolsResult = {
-	tools: MCPTool[];
+export type McpListToolsResult = {
+	tools: McpTool[];
 	nextCursor?: string;
 };
 
-export type MCPCallToolRequest = {
+export type McpCallToolRequest = {
 	name: string;
 	arguments?: Record<string, unknown>;
 };
 
-type MCPTextContent = {
+type McpTextContent = {
 	type: 'text';
 	text: string;
 };
 
-type MCPImageContent = {
+type McpImageContent = {
 	type: 'image';
 	data: string;
 	mimeType: string;
 };
 
-type MCPResourceContent = {
+type McpResourceContent = {
 	type: 'resource';
 	resource:
 		| {
@@ -46,17 +46,21 @@ type MCPResourceContent = {
 };
 
 // Add support for additional content types from MCP SDK
-type MCPAudioContent = {
+type McpAudioContent = {
 	type: 'audio';
 	data: string;
 	mimeType: string;
 };
 
-type MCPContent = MCPTextContent | MCPImageContent | MCPResourceContent | MCPAudioContent;
+type McpContent =
+	| McpTextContent
+	| McpImageContent
+	| McpResourceContent
+	| McpAudioContent;
 
-export type MCPCallToolResult =
+export type McpCallToolResult =
 	| {
-			content: MCPContent[];
+			content: McpContent[];
 			isError?: boolean;
 	  }
 	| {toolResult?: unknown};

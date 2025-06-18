@@ -1,9 +1,9 @@
 import {Mistral} from '@mistralai/mistralai';
 import {
-	AssistantMessage,
-	Tool,
+	type AssistantMessage,
+	type Tool,
 } from '@mistralai/mistralai/models/components/index.js';
-import {MistralMessage} from '../types/mistral.js';
+import {type MistralMessage} from '../types/mistral.js';
 
 export type TokenUsage = {
 	promptTokens: number;
@@ -12,7 +12,7 @@ export type TokenUsage = {
 };
 
 type SuccessResponse = {
-	error: null;
+	error: undefined;
 	assistantMessages: AssistantMessage[];
 	model: string;
 	usage: TokenUsage;
@@ -28,12 +28,13 @@ type ErrorResponse = {
 export type ResponseResult = SuccessResponse | ErrorResponse;
 
 export class MistralService {
-	private client: Mistral | null = null;
+	private readonly client: Mistral | undefined;
 
 	constructor(apiKey: string) {
 		if (!apiKey) {
 			throw new Error('API key is required to initialize Mistral client.');
 		}
+
 		this.client = new Mistral({apiKey});
 	}
 
@@ -60,7 +61,7 @@ export class MistralService {
 			return {error, assistantMessages: [], model};
 		}
 
-		let assistantMessages: AssistantMessage[] = [];
+		const assistantMessages: AssistantMessage[] = [];
 
 		for (const choice of response.choices) {
 			if (choice.finishReason === 'error') {
@@ -69,9 +70,11 @@ export class MistralService {
 			}
 
 			assistantMessages.push(choice.message);
+		}
 
+		if (assistantMessages.length > 0) {
 			return {
-				error: null,
+				error: undefined,
 				assistantMessages,
 				model,
 				usage: response.usage,

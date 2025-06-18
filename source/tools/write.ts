@@ -1,17 +1,17 @@
+import {promises as fs} from 'node:fs';
+import {dirname} from 'node:path';
 import {Server} from '@modelcontextprotocol/sdk/server/index.js';
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
-	Tool,
-	CallToolRequest,
-	CallToolResult,
+	type Tool,
+	type CallToolRequest,
+	type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
-import {promises as fs} from 'fs';
-import {dirname} from 'path';
 
 class WriteToolServer {
-	private server: Server;
+	private readonly server: Server;
 
 	constructor() {
 		this.server = new Server(
@@ -75,7 +75,7 @@ class WriteToolServer {
 
 				try {
 					// Validate that the path is absolute
-					if (!file_path.startsWith('/') && !file_path.match(/^[A-Za-z]:\\/)) {
+					if (!file_path.startsWith('/') && !/^[A-Za-z]:\\/.test(file_path)) {
 						throw new Error('File path must be absolute, not relative');
 					}
 

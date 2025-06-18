@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import {Server} from '@modelcontextprotocol/sdk/server/index.js';
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 class EditToolServer {
-	private server: Server;
+	private readonly server: Server;
 
 	constructor() {
 		this.server = new Server(
@@ -142,7 +142,7 @@ class EditToolServer {
 
 		try {
 			// Read file content
-			const content = await fs.readFile(absolutePath, 'utf-8');
+			const content = await fs.readFile(absolutePath, 'utf8');
 
 			let newContent: string;
 			let replacementCount = 0;
@@ -185,12 +185,13 @@ class EditToolServer {
 			if (error instanceof Error) {
 				throw error;
 			}
+
 			throw new Error(`Failed to edit file: ${String(error)}`);
 		}
 	}
 
 	private escapeRegExp(string: string): string {
-		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		return string.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 	}
 
 	async run() {

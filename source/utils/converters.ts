@@ -1,7 +1,7 @@
 import type {
-	MCPCallToolRequest,
-	MCPListToolsResult,
-	MCPCallToolResult,
+	McpCallToolRequest,
+	McpListToolsResult,
+	McpCallToolResult,
 } from '../types/mcp.js';
 import type {
 	MistralTool,
@@ -10,7 +10,7 @@ import type {
 } from '../types/mistral.js';
 
 export function toMistralTools(
-	listToolResult: MCPListToolsResult,
+	listToolResult: McpListToolsResult,
 ): MistralTool[] {
 	return listToolResult.tools.map(tool => ({
 		type: 'function',
@@ -22,7 +22,7 @@ export function toMistralTools(
 	}));
 }
 
-export function toMCPToolCall(toolCall: MistralToolCall): MCPCallToolRequest {
+export function toMcpToolCall(toolCall: MistralToolCall): McpCallToolRequest {
 	const call = toolCall.function;
 	const toolCallArguments =
 		typeof call.arguments === 'string'
@@ -37,7 +37,7 @@ export function toMCPToolCall(toolCall: MistralToolCall): MCPCallToolRequest {
 
 export function toMistralMessage(
 	toolCallId: string,
-	callToolResult: MCPCallToolResult,
+	callToolResult: McpCallToolResult,
 ): MistralToolMessage {
 	let content: MistralToolMessage['content'];
 
@@ -48,24 +48,30 @@ export function toMistralMessage(
 					type: 'text',
 					text: item.text,
 				} as const;
-			} else if (item.type === 'image') {
+			}
+
+			if (item.type === 'image') {
 				return {
 					type: 'text',
 					text: `[Image: ${item.mimeType}]`,
 				} as const;
-			} else if (item.type === 'audio') {
+			}
+
+			if (item.type === 'audio') {
 				return {
 					type: 'text',
 					text: `[Audio: ${item.mimeType}]`,
 				} as const;
-			} else if (item.type === 'resource') {
+			}
+
+			if (item.type === 'resource') {
 				return {
 					type: 'text',
 					text: `[Resource: ${item.resource.uri}]`,
 				} as const;
-			} else {
-				throw new Error(`Unsupported content type: ${(item as any).type}`);
 			}
+
+			throw new Error(`Unsupported content type: ${(item as any).type}`);
 		});
 	} else if ('toolResult' in callToolResult && callToolResult.toolResult) {
 		// Handle case where content is not provided and toolResult is used instead
@@ -75,7 +81,7 @@ export function toMistralMessage(
 	}
 
 	return {
-		content: content,
+		content,
 		toolCallId,
 		role: 'tool',
 	};

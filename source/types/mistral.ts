@@ -1,8 +1,8 @@
 import {
-	AssistantMessage,
-	SystemMessage,
-	ToolMessage,
-	UserMessage,
+	type AssistantMessage,
+	type SystemMessage,
+	type ToolMessage,
+	type UserMessage,
 } from '@mistralai/mistralai/models/components/index.js';
 
 export type MistralMessage =
@@ -31,13 +31,13 @@ export type MistralToolCall = {
 	index?: number;
 };
 
-type MistralImageURLChunk = {
+type MistralImageUrlChunk = {
 	type: 'image_url';
 	imageUrl:
 		| string
 		| {
 				url: string;
-				detail?: string | null;
+				detail?: string | undefined;
 		  };
 };
 
@@ -53,12 +53,12 @@ type MistralReferenceChunk = {
 
 type MistralContentChunk =
 	| MistralTextChunk
-	| MistralImageURLChunk
+	| MistralImageUrlChunk
 	| MistralReferenceChunk;
 
 export type MistralToolMessage = {
 	role: 'tool';
-	content: string | MistralContentChunk[] | null;
-	toolCallId?: string | null;
-	name?: string | null;
+	content: string | MistralContentChunk[] | undefined;
+	toolCallId?: string | undefined;
+	name?: string | undefined;
 };

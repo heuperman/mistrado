@@ -1,11 +1,11 @@
 import keytar from 'keytar';
 
-const SERVICE_NAME = 'Mistrado';
+const serviceName = 'Mistrado';
 
 type Key = 'MISTRAL_API_KEY';
 
-export async function getSecret(key: Key): Promise<string | null> {
-	return keytar.getPassword(SERVICE_NAME, key);
+export async function getSecret(key: Key): Promise<string | undefined> {
+	return (await keytar.getPassword(serviceName, key)) ?? undefined;
 }
 
 export async function setSecret({
@@ -15,9 +15,9 @@ export async function setSecret({
 	key: Key;
 	value: string;
 }): Promise<void> {
-	await keytar.setPassword(SERVICE_NAME, key, value);
+	await keytar.setPassword(serviceName, key, value);
 }
 
 export async function deleteSecret(key: Key): Promise<void> {
-	await keytar.deletePassword(SERVICE_NAME, key);
+	await keytar.deletePassword(serviceName, key);
 }

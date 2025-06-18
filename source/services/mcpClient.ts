@@ -1,18 +1,18 @@
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 import {
-	MCPServer,
-	MCPListToolsResult,
-	MCPCallToolRequest,
-	MCPCallToolResult,
+	type McpServer,
+	type McpListToolsResult,
+	type McpCallToolRequest,
+	type McpCallToolResult,
 } from '../types/mcp.js';
 
-export class MCPClient {
-	private client: Client;
-	private transport: StdioClientTransport | null = null;
+export class McpClient {
+	private readonly client: Client;
+	private transport: StdioClientTransport | undefined = undefined;
 	private connected = false;
 
-	constructor(private server: MCPServer) {
+	constructor(private readonly server: McpServer) {
 		this.client = new Client({
 			name: 'mistral-cli',
 			version: '0.0.0',
@@ -31,20 +31,22 @@ export class MCPClient {
 		this.connected = true;
 	}
 
-	async listTools(): Promise<MCPListToolsResult> {
+	async listTools(): Promise<McpListToolsResult> {
 		if (!this.connected) {
 			throw new Error('MCP client not connected');
 		}
+
 		const result = await this.client.listTools();
-		return result as MCPListToolsResult;
+		return result as McpListToolsResult;
 	}
 
-	async callTool(request: MCPCallToolRequest): Promise<MCPCallToolResult> {
+	async callTool(request: McpCallToolRequest): Promise<McpCallToolResult> {
 		if (!this.connected) {
 			throw new Error('MCP client not connected');
 		}
+
 		const result = await this.client.callTool(request);
-		return result as MCPCallToolResult;
+		return result as McpCallToolResult;
 	}
 
 	async disconnect(): Promise<void> {
@@ -52,7 +54,7 @@ export class MCPClient {
 
 		await this.client.close();
 		this.connected = false;
-		this.transport = null;
+		this.transport = undefined;
 	}
 
 	isConnected(): boolean {

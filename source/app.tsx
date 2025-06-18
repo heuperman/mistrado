@@ -1,25 +1,30 @@
+import {execSync} from 'node:child_process';
+import {exit as processExit, cwd, platform} from 'node:process';
 import React, {useEffect, useState} from 'react';
 import {Box, Text, useApp} from 'ink';
 import TextInput from 'ink-text-input';
 import {deleteSecret, getSecret} from './services/secretsService.js';
 import ApiKeyInput from './components/ApiKeyInput.js';
-import {MistralService, TokenUsage} from './services/mistralService.js';
+import {MistralService, type TokenUsage} from './services/mistralService.js';
 import Hero from './components/Hero.js';
-import {MistralMessage, MistralTool, MistralToolCall} from './types/mistral.js';
-import {MCPManager} from './services/mcpManager.js';
+import {
+	type MistralMessage,
+	type MistralTool,
+	type MistralToolCall,
+} from './types/mistral.js';
+import {McpManager} from './services/mcpManager.js';
 import {getMainSystemPrompt} from './prompts/system.js';
-import {execSync} from 'child_process';
 
 function isGitRepo() {
 	try {
 		execSync('git rev-parse --git-dir', {stdio: 'ignore'});
 		return true;
-	} catch (error) {
+	} catch {
 		return false;
 	}
 }
 
-function formatUsage(usage: Record<string, TokenUsage> | null): string {
+function formatUsage(usage: Record<string, TokenUsage> | undefined): string {
 	if (!usage) return 'No usage data available.';
 	return Object.entries(usage)
 		.map(
@@ -29,23 +34,23 @@ function formatUsage(usage: Record<string, TokenUsage> | null): string {
 		.join('\n\n');
 }
 
-const COMMANDS = ['exit', 'help', 'usage', 'logout'] as const;
-const COMMAND_ALIASES: Partial<Record<Command, string>> = {
+const commands = ['exit', 'help', 'usage', 'logout'] as const;
+const commandAliases: Partial<Record<Command, string>> = {
 	exit: 'quit',
 } as const;
-const COMMAND_DESCRIPTIONS: Record<Command, string> = {
+const CommandDescriptions: Record<Command, string> = {
 	exit: 'Exit the application',
 	help: 'Show available commands',
 	usage: 'Show token usage statistics',
 	logout: 'Logout and clear API key',
 } as const;
 
-type Command = (typeof COMMANDS)[number];
+type Command = (typeof commands)[number];
 
 function generateCommandHelp(command: Command): string {
 	return `/${command}${
-		COMMAND_ALIASES[command] ? ` (${COMMAND_ALIASES[command]})` : ''
-	} - ${COMMAND_DESCRIPTIONS[command]}`;
+		commandAliases[command] ? ` (${commandAliases[command]})` : ''
+	} - ${CommandDescriptions[command]}`;
 }
 
 const commandRegister: Record<
@@ -57,18 +62,20 @@ const commandRegister: Record<
 	}: {
 		addToHistory: (content: string) => void;
 		logAndExit: (message: string) => void;
-		usage: Record<string, TokenUsage> | null;
+		usage: Record<string, TokenUsage> | undefined;
 	}) => void
 > = {
-	exit: ({logAndExit, usage}) => {
+	exit({logAndExit, usage}) {
 		logAndExit(formatUsage(usage));
 	},
-	help: ({addToHistory}) => {
-		const commandLines = COMMANDS.map(command => generateCommandHelp(command));
+	help({addToHistory}) {
+		const commandLines = commands.map(command => generateCommandHelp(command));
 		addToHistory(`Available commands: \n${commandLines.join('\n')}`);
 	},
-	usage: ({addToHistory, usage}) => addToHistory(formatUsage(usage)),
-	logout: ({addToHistory}) => {
+	usage({addToHistory, usage}) {
+		addToHistory(formatUsage(usage));
+	},
+	logout({addToHistory}) {
 		deleteSecret('MISTRAL_API_KEY');
 		addToHistory(
 			'Logged out successfully. Please restart the app to enter a new API Key.',
@@ -80,7 +87,7 @@ const handleCommand = (
 	commandInput: string,
 	addToHistory: (content: string) => void,
 	logAndExit: (message: string) => void,
-	usage: Record<string, TokenUsage> | null,
+	usage: Record<string, TokenUsage> | undefined,
 ) => {
 	const command = commandInput.trim().toLowerCase();
 
@@ -91,52 +98,48 @@ const handleCommand = (
 		return;
 	}
 
-	return commandRegister[command as Command]({addToHistory, logAndExit, usage});
+	commandRegister[command as Command]({addToHistory, logAndExit, usage});
 };
 
 export default function App() {
 	const {exit} = useApp();
-	const [mistralService, setMistralService] = useState<MistralService | null>(
-		null,
-	);
-	const [mcpManager, setMcpManager] = useState<MCPManager | null>(null);
-	const [apiKey, setApiKey] = useState<string | null>(null);
+	const [mistralService, setMistralService] = useState<
+		MistralService | undefined
+	>();
+	const [mcpManager, setMcpManager] = useState<McpManager | undefined>();
+	const [apiKey, setApiKey] = useState<string | undefined>();
 	const [prompt, setPrompt] = useState('');
 	const [conversationHistory, setConversationHistory] = useState<
 		Array<{type: 'user' | 'assistant' | 'command' | 'tool'; content: string}>
 	>([]);
 	const [loading, setLoading] = useState(false);
-	const [errorOutput, setErrorOutput] = useState<string | null>(null);
+	const [errorOutput, setErrorOutput] = useState<string | undefined>();
 	const [sessionMessages, setSessionMessages] = useState<MistralMessage[]>([]);
-	const [sessionUsage, setSessionUsage] = useState<Record<
-		string,
-		{
-			promptTokens: number;
-			completionTokens: number;
-			totalTokens: number;
-		}
-	> | null>(null);
+	const [sessionUsage, setSessionUsage] = useState<
+		Record<string, TokenUsage> | undefined
+	>();
 	const [shouldExit, setShouldExit] = useState(false);
 
-	const handleGracefulExit = async () => {
-		if (mcpManager) {
-			await mcpManager.disconnect();
-		}
-		exit();
-		process.exit(0);
-	};
-
 	const logAndExit = (message: string) => {
-		setConversationHistory(prev => [
-			...prev,
+		setConversationHistory(previous => [
+			...previous,
 			{type: 'command', content: message},
 		]);
 		setShouldExit(true);
 	};
 
 	useEffect(() => {
+		const handleGracefulExit = async () => {
+			if (mcpManager) {
+				await mcpManager.disconnect();
+			}
+
+			exit();
+			processExit(0);
+		};
+
 		if (shouldExit) {
-			handleGracefulExit().catch(() => process.exit(1));
+			handleGracefulExit().catch(() => processExit(1));
 		}
 	}, [shouldExit, exit, mcpManager]);
 
@@ -157,28 +160,32 @@ export default function App() {
 		}
 
 		if (usage) {
-			setSessionUsage(prevUsage => {
-				if (!prevUsage) {
+			setSessionUsage(previousUsage => {
+				if (!previousUsage) {
 					return {[model]: usage};
-				} else if (prevUsage[model]) {
+				}
+
+				if (previousUsage[model]) {
 					return {
-						...prevUsage,
+						...previousUsage,
 						[model]: {
-							promptTokens: prevUsage[model].promptTokens + usage.promptTokens,
+							promptTokens:
+								previousUsage[model].promptTokens + usage.promptTokens,
 							completionTokens:
-								prevUsage[model].completionTokens + usage.completionTokens,
-							totalTokens: prevUsage[model].totalTokens + usage.totalTokens,
+								previousUsage[model].completionTokens + usage.completionTokens,
+							totalTokens: previousUsage[model].totalTokens + usage.totalTokens,
 						},
 					};
 				}
+
 				return {
-					...prevUsage,
+					...previousUsage,
 					[model]: usage,
 				};
 			});
 		}
 
-		let updatedMessages: MistralMessage[] = messages;
+		const updatedMessages: MistralMessage[] = messages;
 
 		const assistantTextOutputs: string[] = [];
 		const toolCalls: MistralToolCall[] = [];
@@ -194,7 +201,7 @@ export default function App() {
 						if (chunk.type === 'text') {
 							assistantTextOutputs.push(chunk.text);
 						}
-						// TODO: Handle other chunk types if needed
+						// Handle other chunk types if needed
 					}
 				}
 			}
@@ -204,9 +211,9 @@ export default function App() {
 			}
 		}
 
-		if (assistantTextOutputs.length) {
-			setConversationHistory(prev => [
-				...prev,
+		if (assistantTextOutputs.length > 0) {
+			setConversationHistory(previous => [
+				...previous,
 				{type: 'assistant', content: assistantTextOutputs.join('\n')},
 			]);
 		}
@@ -221,23 +228,23 @@ export default function App() {
 			}
 
 			for (const toolCall of toolCalls) {
-				setConversationHistory(prev => [
-					...prev,
+				setConversationHistory(previous => [
+					...previous,
 					{type: 'tool', content: `Calling tool: ${toolCall.function.name}`},
 				]);
 
 				try {
 					const toolCallResult = await mcpManager.callTool(toolCall);
-					updatedMessages.push(toolCallResult);
+					updatedMessages.push(toolCallResult as MistralMessage);
 				} catch (toolError) {
-					const errorMsg =
+					const errorMessage =
 						toolError instanceof Error ? toolError.message : String(toolError);
-					setErrorOutput(`${toolCall.function.name} - ${errorMsg}`);
+					setErrorOutput(`${toolCall.function.name} - ${errorMessage}`);
 
 					// Create error tool message
 					const errorToolMessage: MistralMessage = {
 						role: 'tool',
-						content: `Error: ${errorMsg}`,
+						content: `Error: ${errorMessage}`,
 						toolCallId: toolCall.id || '',
 					};
 					updatedMessages.push(errorToolMessage);
@@ -260,49 +267,51 @@ export default function App() {
 						setApiKey(secretKey);
 						const service = new MistralService(secretKey);
 						setMistralService(service);
-					} catch (err) {
+					} catch (error) {
 						setErrorOutput(
 							`Error initializing Mistral client: ${
-								err instanceof Error ? err.message : String(err)
+								error instanceof Error ? error.message : String(error)
 							}`,
 						);
 					}
 				}
-			} catch (err) {
+			} catch (error) {
 				setErrorOutput(
 					`Error fetching API Key: ${
-						err instanceof Error ? err.message : String(err)
+						error instanceof Error ? error.message : String(error)
 					}`,
 				);
 			}
 		}
+
 		initializeClient();
 	}, []);
 
 	useEffect(() => {
-		async function initializeMCPManager() {
+		async function initializeMcpManager() {
 			try {
-				const manager = new MCPManager();
+				const manager = new McpManager();
 				await manager.initializeBuiltinServers();
 				setMcpManager(manager);
-			} catch (err) {
+			} catch (error) {
 				setErrorOutput(
 					`Error initializing MCP Manager: ${
-						err instanceof Error ? err.message : String(err)
+						error instanceof Error ? error.message : String(error)
 					}`,
 				);
 			}
 		}
-		initializeMCPManager();
+
+		initializeMcpManager();
 	}, []);
 
 	useEffect(() => {
-		if (!sessionMessages.length) {
+		if (sessionMessages.length === 0) {
 			setSessionMessages([
 				getMainSystemPrompt({
-					workingDirectoryPath: process.cwd(),
+					workingDirectoryPath: cwd(),
 					isGitRepo: isGitRepo(),
-					platform: process.platform,
+					platform,
 					todayDate: new Date(),
 				}),
 			]);
@@ -312,19 +321,25 @@ export default function App() {
 	const handleSubmit = async (promptInput: string) => {
 		setLoading(true);
 		setPrompt('');
-		setErrorOutput(null);
+		setErrorOutput(undefined);
 
 		const prompt = promptInput.trim();
 
-		setConversationHistory(prev => [...prev, {type: 'user', content: prompt}]);
+		setConversationHistory(previous => [
+			...previous,
+			{type: 'user', content: prompt},
+		]);
 
 		if (prompt.startsWith('/')) {
 			const addToHistory = (content: string) => {
-				setConversationHistory(prev => [...prev, {type: 'command', content}]);
+				setConversationHistory(previous => [
+					...previous,
+					{type: 'command', content},
+				]);
 			};
+
 			handleCommand(prompt.slice(1), addToHistory, logAndExit, sessionUsage);
 			setLoading(false);
-			return;
 		} else {
 			if (!mistralService) {
 				setErrorOutput(
@@ -347,10 +362,10 @@ export default function App() {
 
 			try {
 				await handleRequest(mistralService, updatedMessages, tools);
-			} catch (err) {
+			} catch (error) {
 				setErrorOutput(
 					`Error getting response: ${
-						err instanceof Error ? err.message : String(err)
+						error instanceof Error ? error.message : String(error)
 					}`,
 				);
 			}
@@ -381,8 +396,8 @@ export default function App() {
 					{entry.type === 'tool' && <Text>{entry.content}</Text>}
 				</Box>
 			))}
-			{loading && <Text color="blue">Pondering...</Text>}
-			{errorOutput && <Text color="red">Error: {errorOutput}</Text>}
+			{loading ? <Text color="blue">Pondering...</Text> : null}
+			{errorOutput ? <Text color="red">Error: {errorOutput}</Text> : null}
 			<Box
 				width="100%"
 				gap={1}
