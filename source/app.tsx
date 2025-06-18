@@ -44,7 +44,7 @@ type Command = (typeof COMMANDS)[number];
 
 function generateCommandHelp(command: Command): string {
 	return `/${command}${
-		COMMAND_ALIASES[command] ? ` (/${COMMAND_ALIASES[command]})` : ''
+		COMMAND_ALIASES[command] ? ` (${COMMAND_ALIASES[command]})` : ''
 	} - ${COMMAND_DESCRIPTIONS[command]}`;
 }
 
@@ -118,6 +118,14 @@ export default function App() {
 	> | null>(null);
 	const [shouldExit, setShouldExit] = useState(false);
 
+	const handleGracefulExit = async () => {
+		if (mcpManager) {
+			await mcpManager.disconnect();
+		}
+		exit();
+		process.exit(0);
+	};
+
 	const logAndExit = (message: string) => {
 		setConversationHistory(prev => [
 			...prev,
@@ -128,10 +136,9 @@ export default function App() {
 
 	useEffect(() => {
 		if (shouldExit) {
-			exit();
-			process.exit(0);
+			handleGracefulExit().catch(() => process.exit(1));
 		}
-	}, [shouldExit, exit]);
+	}, [shouldExit, exit, mcpManager]);
 
 	const handleRequest = async (
 		service: MistralService,
