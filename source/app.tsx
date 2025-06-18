@@ -51,11 +51,11 @@ function generateCommandHelp(command: Command): string {
 const commandRegister: Record<
 	Command,
 	({
-		setOutput,
+		addToHistory,
 		logAndExit,
 		usage,
 	}: {
-		setOutput: React.Dispatch<React.SetStateAction<string>>;
+		addToHistory: (content: string) => void;
 		logAndExit: (message: string) => void;
 		usage: Record<string, TokenUsage> | null;
 	}) => void
@@ -63,14 +63,14 @@ const commandRegister: Record<
 	exit: ({logAndExit, usage}) => {
 		logAndExit(formatUsage(usage));
 	},
-	help: ({setOutput}) => {
+	help: ({addToHistory}) => {
 		const commandLines = COMMANDS.map(command => generateCommandHelp(command));
-		setOutput(`Available commands: \n${commandLines.join('\n')}`);
+		addToHistory(`Available commands: \n${commandLines.join('\n')}`);
 	},
-	usage: ({setOutput, usage}) => setOutput(formatUsage(usage)),
-	logout: ({setOutput}) => {
+	usage: ({addToHistory, usage}) => addToHistory(formatUsage(usage)),
+	logout: ({addToHistory}) => {
 		deleteSecret('MISTRAL_API_KEY');
-		setOutput(
+		addToHistory(
 			'Logged out successfully. Please restart the app to enter a new API Key.',
 		);
 	},
@@ -78,17 +78,20 @@ const commandRegister: Record<
 
 const handleCommand = (
 	commandInput: string,
-	setOutput: React.Dispatch<React.SetStateAction<string>>,
+	addToHistory: (content: string) => void,
 	logAndExit: (message: string) => void,
 	usage: Record<string, TokenUsage> | null,
 ) => {
 	const command = commandInput.trim().toLowerCase();
 
 	if (!command || !commandRegister[command as Command]) {
-		return `Unknown command: ${commandInput}. Type /help for available commands.`;
+		addToHistory(
+			`Unknown command: ${commandInput}. Type /help for available commands.`,
+		);
+		return;
 	}
 
-	return commandRegister[command as Command]({setOutput, logAndExit, usage});
+	return commandRegister[command as Command]({addToHistory, logAndExit, usage});
 };
 
 export default function App() {
@@ -99,7 +102,9 @@ export default function App() {
 	const [mcpManager, setMcpManager] = useState<MCPManager | null>(null);
 	const [apiKey, setApiKey] = useState<string | null>(null);
 	const [prompt, setPrompt] = useState('');
-	const [output, setOutput] = useState('');
+	const [conversationHistory, setConversationHistory] = useState<
+		Array<{type: 'assistant' | 'command'; content: string}>
+	>([]);
 	const [loading, setLoading] = useState(false);
 	const [errorOutput, setErrorOutput] = useState<string | null>(null);
 	const [statusOutput, setStatusOutput] = useState<string | null>(null);
@@ -115,7 +120,10 @@ export default function App() {
 	const [shouldExit, setShouldExit] = useState(false);
 
 	const logAndExit = (message: string) => {
-		setOutput(message);
+		setConversationHistory(prev => [
+			...prev,
+			{type: 'command', content: message},
+		]);
 		setShouldExit(true);
 	};
 
@@ -191,7 +199,10 @@ export default function App() {
 		}
 
 		if (assistantTextOutputs.length) {
-			setOutput(assistantTextOutputs.join('\n'));
+			setConversationHistory(prev => [
+				...prev,
+				{type: 'assistant', content: assistantTextOutputs.join('\n')},
+			]);
 		}
 
 		if (toolCalls?.length) {
@@ -291,14 +302,16 @@ export default function App() {
 
 	const handleSubmit = async (promptInput: string) => {
 		setLoading(true);
-		setOutput('');
 		setPrompt('');
 		setErrorOutput(null);
 
 		const prompt = promptInput.trim();
 
 		if (prompt.startsWith('/')) {
-			handleCommand(prompt.slice(1), setOutput, logAndExit, sessionUsage);
+			const addToHistory = (content: string) => {
+				setConversationHistory(prev => [...prev, {type: 'command', content}]);
+			};
+			handleCommand(prompt.slice(1), addToHistory, logAndExit, sessionUsage);
 			setLoading(false);
 			return;
 		} else {
@@ -340,11 +353,14 @@ export default function App() {
 	return (
 		<Box width="100%" flexDirection="column" gap={1}>
 			<Hero />
-			{!output && !errorOutput && loading && (
-				<Text color="blue">Pondering...</Text>
-			)}
+			{conversationHistory.map((entry, index) => (
+				<Box key={index} marginBottom={1}>
+					{entry.type === 'assistant' && <Text>{entry.content}</Text>}
+					{entry.type === 'command' && <Text>{entry.content}</Text>}
+				</Box>
+			))}
+			{loading && <Text color="blue">Pondering...</Text>}
 			{errorOutput && <Text color="red">Error: {errorOutput}</Text>}
-			{output && <Text>{output}</Text>}
 			<Box
 				width="100%"
 				gap={1}
