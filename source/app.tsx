@@ -103,11 +103,10 @@ export default function App() {
 	const [apiKey, setApiKey] = useState<string | null>(null);
 	const [prompt, setPrompt] = useState('');
 	const [conversationHistory, setConversationHistory] = useState<
-		Array<{type: 'assistant' | 'command'; content: string}>
+		Array<{type: 'user' | 'assistant' | 'command' | 'tool'; content: string}>
 	>([]);
 	const [loading, setLoading] = useState(false);
 	const [errorOutput, setErrorOutput] = useState<string | null>(null);
-	const [statusOutput, setStatusOutput] = useState<string | null>(null);
 	const [sessionMessages, setSessionMessages] = useState<MistralMessage[]>([]);
 	const [sessionUsage, setSessionUsage] = useState<Record<
 		string,
@@ -215,11 +214,14 @@ export default function App() {
 			}
 
 			for (const toolCall of toolCalls) {
+				setConversationHistory(prev => [
+					...prev,
+					{type: 'tool', content: `Calling tool: ${toolCall.function.name}`},
+				]);
+
 				try {
 					const toolCallResult = await mcpManager.callTool(toolCall);
 					updatedMessages.push(toolCallResult);
-
-					setStatusOutput(`Executed tool: ${toolCall.function.name}`);
 				} catch (toolError) {
 					const errorMsg =
 						toolError instanceof Error ? toolError.message : String(toolError);
@@ -307,6 +309,8 @@ export default function App() {
 
 		const prompt = promptInput.trim();
 
+		setConversationHistory(prev => [...prev, {type: 'user', content: prompt}]);
+
 		if (prompt.startsWith('/')) {
 			const addToHistory = (content: string) => {
 				setConversationHistory(prev => [...prev, {type: 'command', content}]);
@@ -355,8 +359,19 @@ export default function App() {
 			<Hero />
 			{conversationHistory.map((entry, index) => (
 				<Box key={index} marginBottom={1}>
+					{entry.type === 'user' && (
+						<Box flexDirection="row" paddingLeft={0}>
+							<Text color="gray">&gt; </Text>
+							<Box flexGrow={1}>
+								<Text color="gray">{entry.content}</Text>
+							</Box>
+						</Box>
+					)}
 					{entry.type === 'assistant' && <Text>{entry.content}</Text>}
-					{entry.type === 'command' && <Text>{entry.content}</Text>}
+					{entry.type === 'command' && (
+						<Text color="yellow">{entry.content}</Text>
+					)}
+					{entry.type === 'tool' && <Text>{entry.content}</Text>}
 				</Box>
 			))}
 			{loading && <Text color="blue">Pondering...</Text>}
@@ -375,7 +390,6 @@ export default function App() {
 					onSubmit={handleSubmit}
 				/>
 			</Box>
-			{statusOutput && <Text color="grey">{statusOutput}</Text>}
 		</Box>
 	);
 }
