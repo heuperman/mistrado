@@ -26,6 +26,11 @@ class ReadToolServer {
 		this.setupToolHandlers();
 	}
 
+	async run(): Promise<void> {
+		const transport = new StdioServerTransport();
+		await this.server.connect(transport);
+	}
+
 	private setupToolHandlers(): void {
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
@@ -205,32 +210,27 @@ class ReadToolServer {
 	}
 
 	private getFileType(filePath: string): string {
-		const ext = path.extname(filePath).toLowerCase();
+		const ext = path.extname(filePath).toLowerCase().slice(1); // Remove the dot
 		const typeMap: Record<string, string> = {
-			'.png': 'PNG Image',
-			'.jpg': 'JPEG Image',
-			'.jpeg': 'JPEG Image',
-			'.gif': 'GIF Image',
-			'.bmp': 'Bitmap Image',
-			'.tiff': 'TIFF Image',
-			'.webp': 'WebP Image',
-			'.ico': 'Icon file',
-			'.pdf': 'PDF Document',
-			'.doc': 'Word Document',
-			'.docx': 'Word Document',
-			'.xls': 'Excel Spreadsheet',
-			'.xlsx': 'Excel Spreadsheet',
-			'.ppt': 'PowerPoint Presentation',
-			'.pptx': 'PowerPoint Presentation',
+			png: 'PNG Image',
+			jpg: 'JPEG Image',
+			jpeg: 'JPEG Image',
+			gif: 'GIF Image',
+			bmp: 'Bitmap Image',
+			tiff: 'TIFF Image',
+			webp: 'WebP Image',
+			ico: 'Icon file',
+			pdf: 'PDF Document',
+			doc: 'Word Document',
+			docx: 'Word Document',
+			xls: 'Excel Spreadsheet',
+			xlsx: 'Excel Spreadsheet',
+			ppt: 'PowerPoint Presentation',
+			pptx: 'PowerPoint Presentation',
 		};
 		return typeMap[ext] ?? 'Binary file';
-	}
-
-	async run(): Promise<void> {
-		const transport = new StdioServerTransport();
-		await this.server.connect(transport);
 	}
 }
 
 const server = new ReadToolServer();
-server.run();
+void server.run();

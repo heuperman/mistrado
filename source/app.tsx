@@ -63,27 +63,27 @@ const commandRegister: Record<
 		addToHistory: (content: string) => void;
 		logAndExit: (message: string) => void;
 		usage: Record<string, TokenUsage> | undefined;
-	}) => void
+	}) => Promise<void>
 > = {
-	exit({logAndExit, usage}) {
+	async exit({logAndExit, usage}) {
 		logAndExit(formatUsage(usage));
 	},
-	help({addToHistory}) {
+	async help({addToHistory}) {
 		const commandLines = commands.map(command => generateCommandHelp(command));
 		addToHistory(`Available commands: \n${commandLines.join('\n')}`);
 	},
-	usage({addToHistory, usage}) {
+	async usage({addToHistory, usage}) {
 		addToHistory(formatUsage(usage));
 	},
-	logout({addToHistory}) {
-		deleteSecret('MISTRAL_API_KEY');
+	async logout({addToHistory}) {
+		await deleteSecret('MISTRAL_API_KEY');
 		addToHistory(
 			'Logged out successfully. Please restart the app to enter a new API Key.',
 		);
 	},
 };
 
-const handleCommand = (
+const handleCommand = async (
 	commandInput: string,
 	addToHistory: (content: string) => void,
 	logAndExit: (message: string) => void,
@@ -98,7 +98,7 @@ const handleCommand = (
 		return;
 	}
 
-	commandRegister[command as Command]({addToHistory, logAndExit, usage});
+	await commandRegister[command as Command]({addToHistory, logAndExit, usage});
 };
 
 export default function App() {
@@ -143,7 +143,7 @@ export default function App() {
 		};
 
 		if (shouldExit) {
-			handleGracefulExit().catch(() => processExit(1));
+			void handleGracefulExit();
 		}
 	}, [shouldExit, exit, mcpManager]);
 
@@ -197,16 +197,16 @@ export default function App() {
 		for (const message of assistantMessages) {
 			updatedMessages.push(message as MistralMessage);
 
-			if (message.content) {
-				if (typeof message.content === 'string') {
-					assistantTextOutputs.push(message.content);
-				} else {
-					for (const chunk of message.content) {
-						if (chunk.type === 'text') {
-							assistantTextOutputs.push(chunk.text);
-						}
-						// Handle other chunk types if needed
+			if (!message.content) return;
+
+			if (typeof message.content === 'string') {
+				assistantTextOutputs.push(message.content);
+			} else {
+				for (const chunk of message.content) {
+					if (chunk.type === 'text') {
+						assistantTextOutputs.push(chunk.text);
 					}
+					// Handle other chunk types if needed
 				}
 			}
 
@@ -235,31 +235,43 @@ export default function App() {
 				return;
 			}
 
-			for (const toolCall of toolCalls) {
-				setConversationHistory(previous => [
-					...previous,
-					{
-						id: previous.length,
-						type: 'tool',
-						content: `Calling tool: ${toolCall.function.name}`,
-					},
-				]);
+			// Execute all tool calls in parallel
+			const toolCallResults = await Promise.allSettled(
+				toolCalls.map(async toolCall => {
+					setConversationHistory(previous => [
+						...previous,
+						{
+							id: previous.length,
+							type: 'tool',
+							content: `Calling tool: ${toolCall.function.name}`,
+						},
+					]);
 
-				try {
-					const toolCallResult = await mcpManager.callTool(toolCall);
-					updatedMessages.push(toolCallResult as MistralMessage);
-				} catch (toolError) {
-					const errorMessage =
-						toolError instanceof Error ? toolError.message : String(toolError);
-					setErrorOutput(`${toolCall.function.name} - ${errorMessage}`);
+					try {
+						const result = await mcpManager.callTool(toolCall);
+						return {success: true, result: result as MistralMessage};
+					} catch (toolError) {
+						const errorMessage =
+							toolError instanceof Error
+								? toolError.message
+								: String(toolError);
+						setErrorOutput(`${toolCall.function.name} - ${errorMessage}`);
 
-					// Create error tool message
-					const errorToolMessage: MistralMessage = {
-						role: 'tool',
-						content: `Error: ${errorMessage}`,
-						toolCallId: toolCall.id ?? '',
-					};
-					updatedMessages.push(errorToolMessage);
+						// Create error tool message
+						const errorToolMessage: MistralMessage = {
+							role: 'tool',
+							content: `Error: ${errorMessage}`,
+							toolCallId: toolCall.id ?? '',
+						};
+						return {success: false, result: errorToolMessage};
+					}
+				}),
+			);
+
+			// Add all results to updated messages
+			for (const result of toolCallResults) {
+				if (result.status === 'fulfilled') {
+					updatedMessages.push(result.value.result);
 				}
 			}
 
@@ -296,7 +308,7 @@ export default function App() {
 			}
 		}
 
-		initializeClient();
+		void initializeClient();
 	}, []);
 
 	useEffect(() => {
@@ -314,7 +326,7 @@ export default function App() {
 			}
 		}
 
-		initializeMcpManager();
+		void initializeMcpManager();
 	}, []);
 
 	useEffect(() => {
@@ -350,7 +362,12 @@ export default function App() {
 				]);
 			};
 
-			handleCommand(prompt.slice(1), addToHistory, logAndExit, sessionUsage);
+			await handleCommand(
+				prompt.slice(1),
+				addToHistory,
+				logAndExit,
+				sessionUsage,
+			);
 			setLoading(false);
 		} else {
 			if (!mistralService) {

@@ -35,6 +35,10 @@ This is an Ink-based CLI application that provides a conversational interface to
 - Integrates MCP (Model Context Protocol) servers for filesystem tools and extensions
 - Type definitions separate Mistral AI types from MCP types
 
+### Contribution guidelines
+
+- Prefer types over interfaces for type definitions
+
 ### Security Notes
 
 - API keys are stored securely via keytar (system keychain)

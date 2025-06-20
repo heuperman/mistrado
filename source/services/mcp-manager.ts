@@ -14,6 +14,7 @@ import {McpClient} from './mcp-client.js';
 export class McpManager {
 	private readonly clients = new Map<string, McpClient>();
 	private availableTools: MistralTool[] = [];
+	private readonly toolToServer = new Map<string, string>();
 
 	async addServer(server: McpServer): Promise<void> {
 		const client = new McpClient(server);
@@ -24,6 +25,11 @@ export class McpManager {
 		const toolsResult = await client.listTools();
 		const mistralTools = toMistralTools(toolsResult);
 		this.availableTools.push(...mistralTools);
+
+		// Map each tool to this server
+		for (const tool of mistralTools) {
+			this.toolToServer.set(tool.function.name, server.name);
+		}
 	}
 
 	async initializeBuiltinServers(): Promise<void> {
@@ -65,26 +71,22 @@ export class McpManager {
 	async callTool(toolCall: MistralToolCall): Promise<MistralToolMessage> {
 		const mcpRequest = toMcpToolCall(toolCall);
 
-		// Find which server has this tool by iterating through clients
-		for (const [, client] of this.clients) {
-			try {
-				const result = await client.callTool(mcpRequest);
-				const message = toMistralMessage(toolCall.id ?? '', result);
-				return message;
-			} catch (error) {
-				// If tool not found in this server, try next one
-				if (error instanceof Error && error.message.includes('Unknown tool')) {
-					continue;
-				}
-
-				// If it's a different error, throw it
-				throw error;
-			}
+		// Find which server has this tool using the mapping
+		const serverName = this.toolToServer.get(mcpRequest.name);
+		if (!serverName) {
+			throw new Error(
+				`Tool ${mcpRequest.name} not found in any connected servers`,
+			);
 		}
 
-		throw new Error(
-			`Tool ${mcpRequest.name} not found in any connected servers`,
-		);
+		const client = this.clients.get(serverName);
+		if (!client) {
+			throw new Error(`Server ${serverName} not found`);
+		}
+
+		const result = await client.callTool(mcpRequest);
+		const message = toMistralMessage(toolCall.id ?? '', result);
+		return message;
 	}
 
 	async disconnect(): Promise<void> {
@@ -93,5 +95,6 @@ export class McpManager {
 		);
 		this.clients.clear();
 		this.availableTools = [];
+		this.toolToServer.clear();
 	}
 }

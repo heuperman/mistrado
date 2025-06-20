@@ -39,6 +39,11 @@ class MultiEditServer {
 		this.setupToolHandlers();
 	}
 
+	async run(): Promise<void> {
+		const transport = new StdioServerTransport();
+		await this.server.connect(transport);
+	}
+
 	private setupToolHandlers(): void {
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
@@ -71,7 +76,7 @@ class MultiEditServer {
 												type: 'boolean',
 												default: false,
 												description:
-													'Replace all occurences of oldString (default false).',
+													'Replace all occurrences of oldString (default false).',
 											},
 										},
 										required: ['oldString', 'newString'],
@@ -236,13 +241,8 @@ class MultiEditServer {
 			}
 		}
 	}
-
-	async run(): Promise<void> {
-		const transport = new StdioServerTransport();
-		await this.server.connect(transport);
-	}
 }
 
 // Start the server
 const server = new MultiEditServer();
-server.run();
+void server.run();

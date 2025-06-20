@@ -43,6 +43,7 @@
 		"ink-testing-library": "^4.0.0",
 		"prettier": "^3.5.3",
 		"ts-node": "^10.9.1",
+		"tsimp": "^2.0.12",
 		"typescript": "^5.8.3",
 		"xo": "^1.0.0"
 	},
@@ -52,7 +53,7 @@
 			"tsx": "module"
 		},
 		"nodeArguments": [
-			"--loader=ts-node/esm"
+			"--import=tsimp"
 		]
 	},
 	"xo": {

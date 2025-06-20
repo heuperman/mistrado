@@ -29,6 +29,11 @@ class WriteToolServer {
 		this.setupToolHandlers();
 	}
 
+	async run() {
+		const transport = new StdioServerTransport();
+		await this.server.connect(transport);
+	}
+
 	private setupToolHandlers() {
 		// Handle list_tools requests
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -110,13 +115,8 @@ class WriteToolServer {
 			},
 		);
 	}
-
-	async run() {
-		const transport = new StdioServerTransport();
-		await this.server.connect(transport);
-	}
 }
 
 // Create and run the server
 const server = new WriteToolServer();
-server.run();
+void server.run();
