@@ -28,6 +28,11 @@ class EditToolServer {
 		this.setupToolHandlers();
 	}
 
+	async run() {
+		const transport = new StdioServerTransport();
+		await this.server.connect(transport);
+	}
+
 	private setupToolHandlers() {
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
@@ -39,27 +44,27 @@ class EditToolServer {
 						inputSchema: {
 							type: 'object',
 							properties: {
-								file_path: {
+								filePath: {
 									type: 'string',
 									description: 'The absolute path to the file to modify',
 								},
-								old_string: {
+								oldString: {
 									type: 'string',
 									description: 'The text to replace',
 								},
-								new_string: {
+								newString: {
 									type: 'string',
 									description:
 										'The text to replace it with (must be different from old_string)',
 								},
-								replace_all: {
+								replaceAll: {
 									type: 'boolean',
 									default: false,
 									description:
 										'Replace all occurences of old_string (default false)',
 								},
 							},
-							required: ['file_path', 'old_string', 'new_string'],
+							required: ['filePath', 'oldString', 'newString'],
 							additionalProperties: false,
 						},
 					},
@@ -73,18 +78,18 @@ class EditToolServer {
 			}
 
 			const args = request.params.arguments as {
-				file_path: string;
-				old_string: string;
-				new_string: string;
-				replace_all?: boolean;
+				filePath: string;
+				oldString: string;
+				newString: string;
+				replaceAll?: boolean;
 			};
 
 			try {
 				const result = await this.editFile(
-					args.file_path,
-					args.old_string,
-					args.new_string,
-					args.replace_all || false,
+					args.filePath,
+					args.oldString,
+					args.newString,
+					args.replaceAll ?? false,
 				);
 
 				return {
@@ -177,7 +182,7 @@ class EditToolServer {
 			}
 
 			// Write the modified content back to the file
-			await fs.writeFile(absolutePath, newContent, 'utf-8');
+			await fs.writeFile(absolutePath, newContent, 'utf8');
 
 			const action = replaceAll ? 'replacements' : 'replacement';
 			return `Successfully made ${replacementCount} ${action} in ${absolutePath}`;
@@ -193,14 +198,7 @@ class EditToolServer {
 	private escapeRegExp(string: string): string {
 		return string.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 	}
-
-	async run() {
-		const transport = new StdioServerTransport();
-		await this.server.connect(transport);
-	}
 }
 
 const server = new EditToolServer();
-server.run().catch(() => {
-	process.exit(1);
-});
+void server.run();

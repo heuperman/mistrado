@@ -37,7 +37,7 @@ class ReadToolServer {
 						inputSchema: {
 							type: 'object',
 							properties: {
-								file_path: {
+								filePath: {
 									type: 'string',
 									description: 'The absolute path to the file to read',
 								},
@@ -52,7 +52,7 @@ class ReadToolServer {
 										'The number of lines to read. Only provide if the file is too large to read at once.',
 								},
 							},
-							required: ['file_path'],
+							required: ['filePath'],
 							additionalProperties: false,
 						},
 					},
@@ -65,19 +65,19 @@ class ReadToolServer {
 				throw new Error(`Unknown tool: ${request.params.name}`);
 			}
 
-			const {file_path, offset, limit} = request.params.arguments as {
-				file_path: string;
+			const {filePath, offset, limit} = request.params.arguments as {
+				filePath: string;
 				offset?: number;
 				limit?: number;
 			};
 
 			try {
 				// Validate that the path is absolute
-				if (!path.isAbsolute(file_path)) {
+				if (!path.isAbsolute(filePath)) {
 					throw new Error('File path must be absolute');
 				}
 
-				const result = await this.readFile(file_path, offset, limit);
+				const result = await this.readFile(filePath, offset, limit);
 
 				return {
 					content: [
@@ -143,7 +143,7 @@ class ReadToolServer {
 
 			// Add metadata if offset/limit was used
 			let result = formattedLines.join('\n');
-			if (offset || limit) {
+			if (offset ?? limit) {
 				const totalLines = lines.length;
 				const showingLines = selectedLines.length;
 				result = `[Showing lines ${startLine + 1}-${startLine + showingLines} of ${totalLines} total lines]\n\n${result}`;
@@ -223,7 +223,7 @@ class ReadToolServer {
 			'.ppt': 'PowerPoint Presentation',
 			'.pptx': 'PowerPoint Presentation',
 		};
-		return typeMap[ext] || 'Binary file';
+		return typeMap[ext] ?? 'Binary file';
 	}
 
 	async run(): Promise<void> {
@@ -233,4 +233,4 @@ class ReadToolServer {
 }
 
 const server = new ReadToolServer();
-server.run().catch(() => process.exit(1));
+server.run();

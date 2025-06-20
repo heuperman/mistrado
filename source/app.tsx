@@ -3,16 +3,16 @@ import {exit as processExit, cwd, platform} from 'node:process';
 import React, {useEffect, useState} from 'react';
 import {Box, Text, useApp} from 'ink';
 import TextInput from 'ink-text-input';
-import {deleteSecret, getSecret} from './services/secretsService.js';
-import ApiKeyInput from './components/ApiKeyInput.js';
-import {MistralService, type TokenUsage} from './services/mistralService.js';
-import Hero from './components/Hero.js';
+import {deleteSecret, getSecret} from './services/secrets-service.js';
+import Login from './components/login.js';
+import {MistralService, type TokenUsage} from './services/mistral-service.js';
+import Hero from './components/hero.js';
 import {
 	type MistralMessage,
 	type MistralTool,
 	type MistralToolCall,
 } from './types/mistral.js';
-import {McpManager} from './services/mcpManager.js';
+import {McpManager} from './services/mcp-manager.js';
 import {getMainSystemPrompt} from './prompts/system.js';
 
 function isGitRepo() {
@@ -110,7 +110,11 @@ export default function App() {
 	const [apiKey, setApiKey] = useState<string | undefined>();
 	const [prompt, setPrompt] = useState('');
 	const [conversationHistory, setConversationHistory] = useState<
-		Array<{type: 'user' | 'assistant' | 'command' | 'tool'; content: string}>
+		Array<{
+			id: number;
+			type: 'user' | 'assistant' | 'command' | 'tool';
+			content: string;
+		}>
 	>([]);
 	const [loading, setLoading] = useState(false);
 	const [errorOutput, setErrorOutput] = useState<string | undefined>();
@@ -123,7 +127,7 @@ export default function App() {
 	const logAndExit = (message: string) => {
 		setConversationHistory(previous => [
 			...previous,
-			{type: 'command', content: message},
+			{id: previous.length, type: 'command', content: message},
 		]);
 		setShouldExit(true);
 	};
@@ -214,7 +218,11 @@ export default function App() {
 		if (assistantTextOutputs.length > 0) {
 			setConversationHistory(previous => [
 				...previous,
-				{type: 'assistant', content: assistantTextOutputs.join('\n')},
+				{
+					id: previous.length,
+					type: 'assistant',
+					content: assistantTextOutputs.join('\n'),
+				},
 			]);
 		}
 
@@ -230,7 +238,11 @@ export default function App() {
 			for (const toolCall of toolCalls) {
 				setConversationHistory(previous => [
 					...previous,
-					{type: 'tool', content: `Calling tool: ${toolCall.function.name}`},
+					{
+						id: previous.length,
+						type: 'tool',
+						content: `Calling tool: ${toolCall.function.name}`,
+					},
 				]);
 
 				try {
@@ -245,7 +257,7 @@ export default function App() {
 					const errorToolMessage: MistralMessage = {
 						role: 'tool',
 						content: `Error: ${errorMessage}`,
-						toolCallId: toolCall.id || '',
+						toolCallId: toolCall.id ?? '',
 					};
 					updatedMessages.push(errorToolMessage);
 				}
@@ -316,7 +328,7 @@ export default function App() {
 				}),
 			]);
 		}
-	}, []);
+	}, [sessionMessages.length]);
 
 	const handleSubmit = async (promptInput: string) => {
 		setLoading(true);
@@ -327,14 +339,14 @@ export default function App() {
 
 		setConversationHistory(previous => [
 			...previous,
-			{type: 'user', content: prompt},
+			{id: previous.length, type: 'user', content: prompt},
 		]);
 
 		if (prompt.startsWith('/')) {
 			const addToHistory = (content: string) => {
 				setConversationHistory(previous => [
 					...previous,
-					{type: 'command', content},
+					{id: previous.length, type: 'command', content},
 				]);
 			};
 
@@ -374,13 +386,13 @@ export default function App() {
 		}
 	};
 
-	if (!apiKey) return <ApiKeyInput setApiKey={setApiKey} />;
+	if (!apiKey) return <Login setApiKey={setApiKey} />;
 
 	return (
 		<Box width="100%" flexDirection="column" gap={1}>
 			<Hero />
-			{conversationHistory.map((entry, index) => (
-				<Box key={index} marginBottom={1}>
+			{conversationHistory.map(entry => (
+				<Box key={entry.id} marginBottom={1}>
 					{entry.type === 'user' && (
 						<Box flexDirection="row" paddingLeft={0}>
 							<Text color="gray">&gt; </Text>

@@ -2,13 +2,13 @@ import {exit} from 'node:process';
 import React, {useState} from 'react';
 import {Box, Text} from 'ink';
 import {UncontrolledTextInput} from 'ink-text-input';
-import {setSecret} from '../services/secretsService.js';
+import {setSecret} from '../services/secrets-service.js';
 
 type ApiKeyInputProps = {
 	readonly setApiKey: React.Dispatch<React.SetStateAction<string | undefined>>;
 };
 
-export default function ApiKeyInput({setApiKey}: ApiKeyInputProps) {
+export default function Login({setApiKey}: ApiKeyInputProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | undefined>();
 

@@ -10,7 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import {minimatch} from 'minimatch';
 
-class LSToolServer {
+class LsToolServer {
 	private readonly server: Server;
 
 	constructor() {
@@ -27,6 +27,11 @@ class LSToolServer {
 		);
 
 		this.setupToolHandlers();
+	}
+
+	async run() {
+		const transport = new StdioServerTransport();
+		await this.server.connect(transport);
 	}
 
 	private setupToolHandlers() {
@@ -67,11 +72,11 @@ class LSToolServer {
 				throw new Error(`Unknown tool: ${request.params.name}`);
 			}
 
-			return this.handleLS(request.params.arguments);
+			return this.handleLs(request.params.arguments);
 		});
 	}
 
-	private async handleLS(args: any) {
+	private async handleLs(args: any) {
 		try {
 			// Validate arguments
 			if (!args || typeof args !== 'object') {
@@ -199,14 +204,7 @@ class LSToolServer {
 			};
 		}
 	}
-
-	async run() {
-		const transport = new StdioServerTransport();
-		await this.server.connect(transport);
-	}
 }
 
-const server = new LSToolServer();
-server.run().catch(() => {
-	process.exit(1);
-});
+const server = new LsToolServer();
+void server.run();

@@ -41,7 +41,7 @@ class WriteToolServer {
 						inputSchema: {
 							type: 'object',
 							properties: {
-								file_path: {
+								filePath: {
 									type: 'string',
 									description:
 										'The absolute path to the file to write (must be absolute, not relative)',
@@ -51,12 +51,12 @@ class WriteToolServer {
 									description: 'The content to write to the file',
 								},
 							},
-							required: ['file_path', 'content'],
+							required: ['filePath', 'content'],
 							additionalProperties: false,
 							$schema: 'http://json-schema.org/draft-07/schema#',
 						},
-					} as Tool,
-				],
+					},
+				] as Tool[],
 			};
 		});
 
@@ -68,29 +68,29 @@ class WriteToolServer {
 					throw new Error(`Unknown tool: ${request.params.name}`);
 				}
 
-				const {file_path, content} = request.params.arguments as {
-					file_path: string;
+				const {filePath, content} = request.params.arguments as {
+					filePath: string;
 					content: string;
 				};
 
 				try {
 					// Validate that the path is absolute
-					if (!file_path.startsWith('/') && !/^[A-Za-z]:\\/.test(file_path)) {
+					if (!filePath.startsWith('/') && !/^[A-Za-z]:\\/.test(filePath)) {
 						throw new Error('File path must be absolute, not relative');
 					}
 
 					// Ensure the directory exists
-					const dir = dirname(file_path);
+					const dir = dirname(filePath);
 					await fs.mkdir(dir, {recursive: true});
 
 					// Write the file
-					await fs.writeFile(file_path, content, 'utf8');
+					await fs.writeFile(filePath, content, 'utf8');
 
 					return {
 						content: [
 							{
 								type: 'text',
-								text: `Successfully wrote file: ${file_path}`,
+								text: `Successfully wrote file: ${filePath}`,
 							},
 						],
 					};
@@ -119,6 +119,4 @@ class WriteToolServer {
 
 // Create and run the server
 const server = new WriteToolServer();
-server.run().catch(() => {
-	process.exit(1);
-});
+server.run();

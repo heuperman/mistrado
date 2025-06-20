@@ -9,7 +9,7 @@ import {
 	toMcpToolCall,
 	toMistralMessage,
 } from '../utils/converters.js';
-import {McpClient} from './mcpClient.js';
+import {McpClient} from './mcp-client.js';
 
 export class McpManager {
 	private readonly clients = new Map<string, McpClient>();
