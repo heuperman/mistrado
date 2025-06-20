@@ -35,29 +35,9 @@ export class McpManager {
 	async initializeBuiltinServers(): Promise<void> {
 		const servers: McpServer[] = [
 			{
-				name: 'readServer',
+				name: 'toolServer',
 				command: 'node',
-				args: ['dist/tools/read.js'],
-			},
-			{
-				name: 'listServer',
-				command: 'node',
-				args: ['dist/tools/list.js'],
-			},
-			{
-				name: 'writeServer',
-				command: 'node',
-				args: ['dist/tools/write.js'],
-			},
-			{
-				name: 'editServer',
-				command: 'node',
-				args: ['dist/tools/edit.js'],
-			},
-			{
-				name: 'multiEditServer',
-				command: 'node',
-				args: ['dist/tools/multiEdit.js'],
+				args: ['dist/tools/tool-server.js'],
 			},
 		];
 

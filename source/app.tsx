@@ -35,8 +35,8 @@ function formatUsage(usage: Record<string, TokenUsage> | undefined): string {
 }
 
 const commands = ['exit', 'help', 'usage', 'logout'] as const;
-const commandAliases: Partial<Record<Command, string>> = {
-	exit: 'quit',
+const commandAliases: Partial<Record<string, Command>> = {
+	quit: 'exit',
 } as const;
 const CommandDescriptions: Record<Command, string> = {
 	exit: 'Exit the application',
@@ -48,9 +48,14 @@ const CommandDescriptions: Record<Command, string> = {
 type Command = (typeof commands)[number];
 
 function generateCommandHelp(command: Command): string {
-	return `/${command}${
-		commandAliases[command] ? ` (${commandAliases[command]})` : ''
-	} - ${CommandDescriptions[command]}`;
+	const commandAlias = Object.keys(commandAliases).find(
+		alias => commandAliases[alias] === command,
+	);
+	if (commandAlias) {
+		return `/${command} ${commandAlias ? `(${commandAlias})` : ''} - ${CommandDescriptions[command]}`;
+	}
+
+	return `/${command} - ${CommandDescriptions[command]}`;
 }
 
 const commandRegister: Record<
@@ -89,16 +94,20 @@ const handleCommand = async (
 	logAndExit: (message: string) => void,
 	usage: Record<string, TokenUsage> | undefined,
 ) => {
-	const command = commandInput.trim().toLowerCase();
+	const input = commandInput.trim().toLowerCase();
 
-	if (!command || !commandRegister[command as Command]) {
+	const command: Command = commandAliases[input] ?? (input as Command);
+
+	console.debug(`Received command: ${command}`);
+
+	if (!command && commands.includes(command as Command)) {
 		addToHistory(
-			`Unknown command: ${commandInput}. Type /help for available commands.`,
+			`Unknown command: ${input}. Type /help for available commands.`,
 		);
 		return;
 	}
 
-	await commandRegister[command as Command]({addToHistory, logAndExit, usage});
+	await commandRegister[command]({addToHistory, logAndExit, usage});
 };
 
 export default function App() {
@@ -197,11 +206,9 @@ export default function App() {
 		for (const message of assistantMessages) {
 			updatedMessages.push(message as MistralMessage);
 
-			if (!message.content) return;
-
 			if (typeof message.content === 'string') {
 				assistantTextOutputs.push(message.content);
-			} else {
+			} else if (Array.isArray(message.content)) {
 				for (const chunk of message.content) {
 					if (chunk.type === 'text') {
 						assistantTextOutputs.push(chunk.text);
