@@ -1,4 +1,4 @@
-import {exit} from 'node:process';
+import process from 'node:process';
 import React, {useState} from 'react';
 import {Box, Text} from 'ink';
 import {UncontrolledTextInput} from 'ink-text-input';
@@ -20,7 +20,8 @@ export default function Login({setApiKey}: ApiKeyInputProps) {
 		if (!cleanedInput) {
 			setError('API Key cannot be empty.');
 		} else if (cleanedInput === '/exit' || cleanedInput === '/quit') {
-			exit(0);
+			// eslint-disable-next-line unicorn/no-process-exit
+			process.exit(0);
 		} else {
 			try {
 				await setSecret({key: 'MISTRAL_API_KEY', value: cleanedInput});

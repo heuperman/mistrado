@@ -14,8 +14,8 @@ export class McpClient {
 
 	constructor(private readonly server: McpServer) {
 		this.client = new Client({
-			name: 'mistral-cli',
-			version: '0.0.0',
+			name: 'mistrado',
+			version: '0.1.0',
 		});
 	}
 

@@ -1,4 +1,4 @@
-# mistral-cli
+# Mistrado
 
 A terminal-based conversational interface for Mistral AI, built with Ink and React.
 
@@ -13,7 +13,7 @@ A terminal-based conversational interface for Mistral AI, built with Ink and Rea
 ## Install
 
 ```bash
-$ npm install --global mistral-cli
+npm install --global mistrado
 ```
 
 ## Usage
@@ -21,7 +21,7 @@ $ npm install --global mistral-cli
 Simply run the CLI to start a conversation:
 
 ```bash
-$ mistral-cli
+mistrado
 ```
 
 On first run, you'll be prompted to enter your Mistral API key, which will be securely stored in your system keychain.

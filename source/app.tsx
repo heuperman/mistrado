@@ -1,5 +1,5 @@
 import {execSync} from 'node:child_process';
-import {exit as processExit, cwd, platform} from 'node:process';
+import process from 'node:process';
 import React, {useEffect, useState} from 'react';
 import {Box, Text, useApp} from 'ink';
 import TextInput from 'ink-text-input';
@@ -98,8 +98,6 @@ const handleCommand = async (
 
 	const command: Command = commandAliases[input] ?? (input as Command);
 
-	console.debug(`Received command: ${command}`);
-
 	if (!command && commands.includes(command as Command)) {
 		addToHistory(
 			`Unknown command: ${input}. Type /help for available commands.`,
@@ -148,13 +146,30 @@ export default function App() {
 			}
 
 			exit();
-			processExit(0);
+			// eslint-disable-next-line unicorn/no-process-exit
+			process.exit(0);
 		};
 
 		if (shouldExit) {
 			void handleGracefulExit();
 		}
 	}, [shouldExit, exit, mcpManager]);
+
+	useEffect(() => {
+		const handleSignal = () => {
+			if (mcpManager) {
+				setShouldExit(true);
+			}
+		};
+
+		process.on('SIGINT', handleSignal);
+		process.on('SIGTERM', handleSignal);
+
+		return () => {
+			process.removeListener('SIGINT', handleSignal);
+			process.removeListener('SIGTERM', handleSignal);
+		};
+	}, [mcpManager]);
 
 	const handleRequest = async (
 		service: MistralService,
@@ -340,9 +355,9 @@ export default function App() {
 		if (sessionMessages.length === 0) {
 			setSessionMessages([
 				getMainSystemPrompt({
-					workingDirectoryPath: cwd(),
+					workingDirectoryPath: process.cwd(),
 					isGitRepo: isGitRepo(),
-					platform,
+					platform: process.platform,
 					todayDate: new Date(),
 				}),
 			]);
