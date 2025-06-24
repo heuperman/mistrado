@@ -28,11 +28,7 @@ function generateCommandHelp(command: Command): string {
 	const commandAlias = Object.keys(commandAliases).find(
 		alias => commandAliases[alias] === command,
 	);
-	if (commandAlias) {
-		return `/${command} ${commandAlias ? `(${commandAlias})` : ''} - ${commandDescriptions[command]}`;
-	}
-
-	return `/${command} - ${commandDescriptions[command]}`;
+	return `/**${command}** ${commandAlias ? `(**${commandAlias}**)` : ''} - ${commandDescriptions[command]}`;
 }
 
 const commandRegister: Record<
@@ -52,7 +48,7 @@ const commandRegister: Record<
 	},
 	async help({addToHistory}) {
 		const commandLines = commands.map(command => generateCommandHelp(command));
-		addToHistory(`Available commands: \n${commandLines.join('\n')}`);
+		addToHistory(`**Available commands**: \n${commandLines.join('\n')}`);
 	},
 	async usage({addToHistory, usage}) {
 		addToHistory(formatUsage(usage));

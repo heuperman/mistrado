@@ -2,6 +2,7 @@ import React from 'react';
 import {Box, Text} from 'ink';
 import type {ConversationEntry} from '../services/conversation-service.js';
 import Loading from './loading.js';
+import Markdown from './markdown.js';
 
 type ConversationProps = {
 	readonly history: readonly ConversationEntry[];
@@ -28,11 +29,9 @@ export default function Conversation({
 							</Box>
 						</Box>
 					)}
-					{entry.type === 'assistant' && <Text>{entry.content}</Text>}
-					{entry.type === 'command' && (
-						<Text color="yellow">{entry.content}</Text>
-					)}
-					{entry.type === 'tool' && <Text>{entry.content}</Text>}
+					{entry.type === 'assistant' && <Markdown>{entry.content}</Markdown>}
+					{entry.type === 'command' && <Markdown>{entry.content}</Markdown>}
+					{entry.type === 'tool' && <Markdown>{entry.content}</Markdown>}
 				</Box>
 			))}
 			{isLoading ? <Loading completionTokens={currentTokenCount} /> : null}
