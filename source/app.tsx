@@ -45,18 +45,13 @@ export default function App() {
 		const trimmedPrompt = promptInput.trim();
 
 		addToHistory({
-			id: Date.now(),
 			type: 'user',
 			content: trimmedPrompt,
 		});
 
 		if (commandHandler.isCommand(trimmedPrompt)) {
 			const addToHistoryCommand = (content: string) => {
-				addToHistory({
-					id: Date.now(),
-					type: 'command',
-					content,
-				});
+				addToHistory({type: 'command', content});
 			};
 
 			await commandHandler.handleCommand(

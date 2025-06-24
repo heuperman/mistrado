@@ -1,5 +1,5 @@
+import type {UsageInfo} from '@mistralai/mistralai/models/components/usageinfo.js';
 import {deleteSecret} from '../services/secrets-service.js';
-import type {TokenUsage} from '../services/mistral-service.js';
 
 const commands = ['exit', 'help', 'usage', 'logout'] as const;
 const commandAliases: Partial<Record<string, Command>> = {
@@ -14,7 +14,7 @@ const commandDescriptions: Record<Command, string> = {
 
 export type Command = (typeof commands)[number];
 
-function formatUsage(usage: Record<string, TokenUsage> | undefined): string {
+function formatUsage(usage: Record<string, UsageInfo> | undefined): string {
 	if (!usage) return 'No usage data available.';
 	return Object.entries(usage)
 		.map(
@@ -44,7 +44,7 @@ const commandRegister: Record<
 	}: {
 		addToHistory: (content: string) => void;
 		logAndExit: (message: string) => void;
-		usage: Record<string, TokenUsage> | undefined;
+		usage: Record<string, UsageInfo> | undefined;
 	}) => Promise<void>
 > = {
 	async exit({logAndExit, usage}) {
@@ -70,7 +70,7 @@ export class CommandHandler {
 		commandInput: string,
 		addToHistory: (content: string) => void,
 		logAndExit: (message: string) => void,
-		usage: Record<string, TokenUsage> | undefined,
+		usage: Record<string, UsageInfo> | undefined,
 	): Promise<void> {
 		const input = commandInput.trim().toLowerCase();
 		const command: Command = commandAliases[input] ?? (input as Command);

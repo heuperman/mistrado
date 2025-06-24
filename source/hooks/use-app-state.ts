@@ -1,7 +1,8 @@
 import process from 'node:process';
 import {useEffect, useState} from 'react';
+import type {UsageInfo} from '@mistralai/mistralai/models/components/usageinfo.js';
 import {getSecret} from '../services/secrets-service.js';
-import {MistralService, type TokenUsage} from '../services/mistral-service.js';
+import {MistralService} from '../services/mistral-service.js';
 import {McpManager} from '../services/mcp-manager.js';
 import {getMainSystemPrompt} from '../prompts/system.js';
 import {isGitRepo} from '../utils/app-utils.js';
@@ -22,7 +23,7 @@ export function useAppState() {
 	const [errorOutput, setErrorOutput] = useState<string | undefined>();
 	const [sessionMessages, setSessionMessages] = useState<MistralMessage[]>([]);
 	const [sessionUsage, setSessionUsage] = useState<
-		Record<string, TokenUsage> | undefined
+		Record<string, UsageInfo> | undefined
 	>();
 	const [shouldExit, setShouldExit] = useState(false);
 
@@ -89,19 +90,19 @@ export function useAppState() {
 		}
 	}, [sessionMessages.length]);
 
-	const addToHistory = (entry: ConversationEntry) => {
-		setConversationHistory(previous => [...previous, entry]);
+	const addToHistory = (entry: Omit<ConversationEntry, 'id'>) => {
+		setConversationHistory(previous => [
+			...previous,
+			{id: previous.length, ...entry},
+		]);
 	};
 
 	const logAndExit = (message: string) => {
-		setConversationHistory(previous => [
-			...previous,
-			{id: previous.length, type: 'command', content: message},
-		]);
+		addToHistory({type: 'command', content: message});
 		setShouldExit(true);
 	};
 
-	const updateUsage = (usage: TokenUsage, model: string) => {
+	const updateUsage = (usage: UsageInfo, model: string) => {
 		setSessionUsage(previousUsage => {
 			if (!previousUsage) {
 				return {[model]: usage};

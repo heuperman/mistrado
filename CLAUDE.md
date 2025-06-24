@@ -32,6 +32,7 @@ When users submit prompts, the app:
 The codebase follows a modular architecture with clear separation of concerns:
 
 #### Core Components
+
 - **App** (`source/app.tsx`): Lightweight orchestration component that coordinates hooks, services, and user interactions
 - **CLI Entry** (`source/cli.tsx`): Simple entry point that renders the App component
 - **Conversation** (`source/components/conversation.tsx`): Reusable component for displaying conversation history with message type styling
@@ -39,10 +40,12 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **Hero** (`source/components/hero.tsx`): Welcome/branding display
 
 #### Custom Hooks
+
 - **useAppState** (`source/hooks/use-app-state.ts`): Centralized state management for services, conversation, loading states, and initialization logic
 - **useSignalHandler** (`source/hooks/use-signal-handler.ts`): Process signal handling (SIGINT/SIGTERM) and graceful shutdown coordination
 
 #### Services Layer
+
 - **ConversationService** (`source/services/conversation-service.ts`): Handles AI interactions, tool calling, and conversation flow with callback-based architecture
 - **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using `devstral-small-2505` model
 - **McpManager** (`source/services/mcp-manager.ts`): Orchestrates multiple MCP servers, maps tools to servers, handles parallel tool execution
@@ -50,9 +53,11 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 
 #### Command System
+
 - **CommandHandler** (`source/commands/command-handler.ts`): Encapsulates slash command logic, aliases, descriptions, and execution
 
 #### Utilities
+
 - **App Utils** (`source/utils/app-utils.ts`): Shared utility functions like git repository detection
 
 ### MCP Tool Integration
