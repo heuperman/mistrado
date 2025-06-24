@@ -7,12 +7,14 @@ type ConversationProps = {
 	readonly history: readonly ConversationEntry[];
 	readonly isLoading: boolean;
 	readonly errorOutput?: string;
+	readonly currentTokenCount?: number;
 };
 
 export default function Conversation({
 	history,
 	isLoading,
 	errorOutput,
+	currentTokenCount,
 }: ConversationProps) {
 	return (
 		<>
@@ -33,7 +35,7 @@ export default function Conversation({
 					{entry.type === 'tool' && <Text>{entry.content}</Text>}
 				</Box>
 			))}
-			{isLoading ? <Loading /> : null}
+			{isLoading ? <Loading completionTokens={currentTokenCount} /> : null}
 			{errorOutput ? <Text color="red">Error: {errorOutput}</Text> : null}
 		</>
 	);

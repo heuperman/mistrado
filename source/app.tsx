@@ -24,6 +24,7 @@ export default function App() {
 		sessionMessages,
 		sessionUsage,
 		shouldExit,
+		currentTokenCount,
 		setApiKey,
 		setPrompt,
 		setIsLoading,
@@ -33,6 +34,8 @@ export default function App() {
 		addToHistory,
 		logAndExit,
 		updateUsage,
+		updateTokenCount,
+		resetTokenCount,
 	} = useAppState();
 
 	useSignalHandler(mcpManager, shouldExit, setShouldExit);
@@ -41,6 +44,7 @@ export default function App() {
 		setIsLoading(true);
 		setPrompt('');
 		setErrorOutput(undefined);
+		resetTokenCount();
 
 		const trimmedPrompt = promptInput.trim();
 
@@ -92,6 +96,7 @@ export default function App() {
 						onHistoryUpdate: addToHistory,
 						onMessagesUpdate: setSessionMessages,
 						onLoadingChange: setIsLoading,
+						onTokenProgress: updateTokenCount,
 					},
 				);
 			} catch (error) {
@@ -115,6 +120,7 @@ export default function App() {
 				history={conversationHistory}
 				isLoading={isLoading}
 				errorOutput={errorOutput}
+				currentTokenCount={currentTokenCount}
 			/>
 			<Box
 				width="100%"

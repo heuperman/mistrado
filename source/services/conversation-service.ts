@@ -22,6 +22,7 @@ type ConversationCallbacks = {
 	onHistoryUpdate: (entry: Omit<ConversationEntry, 'id'>) => void;
 	onMessagesUpdate: React.Dispatch<React.SetStateAction<MistralMessage[]>>;
 	onLoadingChange: (loading: boolean) => void;
+	onTokenProgress: (tokens: number) => void;
 };
 
 type HandleRequestParameters = {
@@ -39,7 +40,7 @@ export class ConversationService {
 		try {
 			const {service, messages, tools, mcpManager} = parameters;
 			const {error, assistantMessages, usage, model} =
-				await service.getResponse(messages, tools);
+				await service.getResponse(messages, tools, callbacks.onTokenProgress);
 
 			if (error) {
 				callbacks.onError(error);

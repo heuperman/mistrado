@@ -26,6 +26,8 @@ type ErrorResponse = {
 
 export type ResponseResult = SuccessResponse | ErrorResponse;
 
+type TokenProgressCallback = (tokens: number) => void;
+
 export class MistralService {
 	private readonly client: Mistral | undefined;
 
@@ -40,6 +42,7 @@ export class MistralService {
 	async getResponse(
 		messages: MistralMessage[],
 		tools: Tool[] = [],
+		onTokenProgress?: TokenProgressCallback,
 	): Promise<ResponseResult> {
 		const model = 'devstral-small-2505';
 
@@ -56,7 +59,7 @@ export class MistralService {
 				tools,
 			});
 
-			return await this.processStream(stream, model);
+			return await this.processStream(stream, model, onTokenProgress);
 		} catch (error) {
 			return {
 				error: `API request failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -69,10 +72,12 @@ export class MistralService {
 	private async processStream(
 		stream: EventStream<CompletionEvent>,
 		model: string,
+		onTokenProgress?: TokenProgressCallback,
 	): Promise<ResponseResult> {
 		let assistantMessages: AssistantMessage[] = [];
 		let usage: UsageInfo | undefined;
 		let hasError = false;
+		let cumulativeTokens = 0;
 
 		for await (const chunk of stream) {
 			if (chunk.data.choices.length > 0) {
@@ -89,6 +94,14 @@ export class MistralService {
 
 			if (chunk.data.usage) {
 				usage = chunk.data.usage;
+				// Update cumulative tokens and notify progress
+				const newTokenCount = usage.completionTokens;
+				if (newTokenCount > cumulativeTokens) {
+					cumulativeTokens = newTokenCount;
+					if (onTokenProgress) {
+						onTokenProgress(cumulativeTokens);
+					}
+				}
 			}
 		}
 

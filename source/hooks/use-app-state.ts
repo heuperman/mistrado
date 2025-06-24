@@ -26,6 +26,7 @@ export function useAppState() {
 		Record<string, UsageInfo> | undefined
 	>();
 	const [shouldExit, setShouldExit] = useState(false);
+	const [currentTokenCount, setCurrentTokenCount] = useState(0);
 
 	// Initialize Mistral client
 	useEffect(() => {
@@ -128,6 +129,14 @@ export function useAppState() {
 		});
 	};
 
+	const updateTokenCount = (tokens: number) => {
+		setCurrentTokenCount(tokens);
+	};
+
+	const resetTokenCount = () => {
+		setCurrentTokenCount(0);
+	};
+
 	return {
 		// State
 		mistralService,
@@ -140,6 +149,7 @@ export function useAppState() {
 		sessionMessages,
 		sessionUsage,
 		shouldExit,
+		currentTokenCount,
 		// Setters
 		setApiKey,
 		setPrompt,
@@ -151,5 +161,7 @@ export function useAppState() {
 		addToHistory,
 		logAndExit,
 		updateUsage,
+		updateTokenCount,
+		resetTokenCount,
 	};
 }
