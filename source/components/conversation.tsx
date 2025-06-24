@@ -1,6 +1,7 @@
 import React from 'react';
 import {Box, Text} from 'ink';
 import type {ConversationEntry} from '../services/conversation-service.js';
+import Loading from './loading.js';
 
 type ConversationProps = {
 	readonly history: readonly ConversationEntry[];
@@ -32,7 +33,7 @@ export default function Conversation({
 					{entry.type === 'tool' && <Text>{entry.content}</Text>}
 				</Box>
 			))}
-			{isLoading ? <Text color="blue">Pondering...</Text> : null}
+			{isLoading ? <Loading /> : null}
 			{errorOutput ? <Text color="red">Error: {errorOutput}</Text> : null}
 		</>
 	);
