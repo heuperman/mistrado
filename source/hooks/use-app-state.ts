@@ -1,0 +1,154 @@
+import process from 'node:process';
+import {useEffect, useState} from 'react';
+import {getSecret} from '../services/secrets-service.js';
+import {MistralService, type TokenUsage} from '../services/mistral-service.js';
+import {McpManager} from '../services/mcp-manager.js';
+import {getMainSystemPrompt} from '../prompts/system.js';
+import {isGitRepo} from '../utils/app-utils.js';
+import type {MistralMessage} from '../types/mistral.js';
+import type {ConversationEntry} from '../services/conversation-service.js';
+
+export function useAppState() {
+	const [mistralService, setMistralService] = useState<
+		MistralService | undefined
+	>();
+	const [mcpManager, setMcpManager] = useState<McpManager | undefined>();
+	const [apiKey, setApiKey] = useState<string | undefined>();
+	const [prompt, setPrompt] = useState('');
+	const [conversationHistory, setConversationHistory] = useState<
+		ConversationEntry[]
+	>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [errorOutput, setErrorOutput] = useState<string | undefined>();
+	const [sessionMessages, setSessionMessages] = useState<MistralMessage[]>([]);
+	const [sessionUsage, setSessionUsage] = useState<
+		Record<string, TokenUsage> | undefined
+	>();
+	const [shouldExit, setShouldExit] = useState(false);
+
+	// Initialize Mistral client
+	useEffect(() => {
+		async function initializeClient() {
+			try {
+				const secretKey = await getSecret('MISTRAL_API_KEY');
+				if (secretKey) {
+					try {
+						setApiKey(secretKey);
+						const service = new MistralService(secretKey);
+						setMistralService(service);
+					} catch (error) {
+						setErrorOutput(
+							`Error initializing Mistral client: ${
+								error instanceof Error ? error.message : String(error)
+							}`,
+						);
+					}
+				}
+			} catch (error) {
+				setErrorOutput(
+					`Error fetching API Key: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				);
+			}
+		}
+
+		void initializeClient();
+	}, []);
+
+	// Initialize MCP Manager
+	useEffect(() => {
+		async function initializeMcpManager() {
+			try {
+				const manager = new McpManager();
+				await manager.initializeBuiltinServers();
+				setMcpManager(manager);
+			} catch (error) {
+				setErrorOutput(
+					`Error initializing MCP Manager: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				);
+			}
+		}
+
+		void initializeMcpManager();
+	}, []);
+
+	// Initialize system prompt
+	useEffect(() => {
+		if (sessionMessages.length === 0) {
+			setSessionMessages([
+				getMainSystemPrompt({
+					workingDirectoryPath: process.cwd(),
+					isGitRepo: isGitRepo(),
+					platform: process.platform,
+					todayDate: new Date(),
+				}),
+			]);
+		}
+	}, [sessionMessages.length]);
+
+	const addToHistory = (entry: ConversationEntry) => {
+		setConversationHistory(previous => [...previous, entry]);
+	};
+
+	const logAndExit = (message: string) => {
+		setConversationHistory(previous => [
+			...previous,
+			{id: previous.length, type: 'command', content: message},
+		]);
+		setShouldExit(true);
+	};
+
+	const updateUsage = (usage: TokenUsage, model: string) => {
+		setSessionUsage(previousUsage => {
+			if (!previousUsage) {
+				return {[model]: usage};
+			}
+
+			if (previousUsage[model]) {
+				return {
+					...previousUsage,
+					[model]: {
+						promptTokens:
+							previousUsage[model].promptTokens + usage.promptTokens,
+						completionTokens:
+							previousUsage[model].completionTokens + usage.completionTokens,
+						totalTokens: previousUsage[model].totalTokens + usage.totalTokens,
+					},
+				};
+			}
+
+			return {
+				...previousUsage,
+				[model]: usage,
+			};
+		});
+	};
+
+	return {
+		// State
+		mistralService,
+		mcpManager,
+		apiKey,
+		prompt,
+		conversationHistory,
+		isLoading,
+		errorOutput,
+		sessionMessages,
+		sessionUsage,
+		shouldExit,
+		// Setters
+		setApiKey,
+		setPrompt,
+		setIsLoading,
+		setErrorOutput,
+		setSessionMessages,
+		setShouldExit,
+		// Helpers
+		addToHistory,
+		logAndExit,
+		updateUsage,
+	};
+}

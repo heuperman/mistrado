@@ -15,35 +15,52 @@ This is an Ink-based CLI application that provides a conversational interface to
 ### Core Flow
 
 The app initializes three main systems concurrently:
+
 1. **Mistral API client** - for AI conversations
 2. **MCP Manager** - coordinates multiple MCP servers for tool execution
 3. **Built-in Tool Server** - provides filesystem operations (read, write, edit, ls, multi-edit)
 
 When users submit prompts, the app:
+
 1. Sends message + available MCP tools to Mistral API
 2. If AI responds with tool calls, executes them via MCP Manager
 3. Returns tool results to continue the conversation
 4. Displays streaming responses in real-time terminal UI
 
-### Key Components
+### Modular Architecture
 
-- **App** (`source/app.tsx`): Main React component managing conversation state, API key handling, and coordinating between Mistral service and MCP tools. Handles graceful shutdown via SIGINT/SIGTERM signals
+The codebase follows a modular architecture with clear separation of concerns:
+
+#### Core Components
+- **App** (`source/app.tsx`): Lightweight orchestration component that coordinates hooks, services, and user interactions
 - **CLI Entry** (`source/cli.tsx`): Simple entry point that renders the App component
+- **Conversation** (`source/components/conversation.tsx`): Reusable component for displaying conversation history with message type styling
 - **Login** (`source/components/login.tsx`): Secure API key input and storage interface
 - **Hero** (`source/components/hero.tsx`): Welcome/branding display
 
-### Services Layer
+#### Custom Hooks
+- **useAppState** (`source/hooks/use-app-state.ts`): Centralized state management for services, conversation, loading states, and initialization logic
+- **useSignalHandler** (`source/hooks/use-signal-handler.ts`): Process signal handling (SIGINT/SIGTERM) and graceful shutdown coordination
 
+#### Services Layer
+- **ConversationService** (`source/services/conversation-service.ts`): Handles AI interactions, tool calling, and conversation flow with callback-based architecture
 - **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using `devstral-small-2505` model
 - **McpManager** (`source/services/mcp-manager.ts`): Orchestrates multiple MCP servers, maps tools to servers, handles parallel tool execution
 - **McpClient** (`source/services/mcp-client.ts`): Individual MCP server connection management with stdio transport
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 
+#### Command System
+- **CommandHandler** (`source/commands/command-handler.ts`): Encapsulates slash command logic, aliases, descriptions, and execution
+
+#### Utilities
+- **App Utils** (`source/utils/app-utils.ts`): Shared utility functions like git repository detection
+
 ### MCP Tool Integration
 
 The app runs a built-in **ToolServer** (`source/tools/tool-server.ts`) that provides filesystem operations:
+
 - **edit**: String replacement in files
-- **multi-edit**: Multiple edits in sequence 
+- **multi-edit**: Multiple edits in sequence
 - **read**: File content reading with offset/limit
 - **write**: File creation/overwriting
 - **ls**: Directory listing with glob ignore patterns
@@ -58,17 +75,23 @@ Tool handlers are in `source/tools/handlers/` and use MCP protocol for communica
 
 ### Key Patterns
 
-- React hooks for state management (conversation history, loading states, errors)
-- Streaming responses from Mistral API with real-time UI updates
-- Slash commands (`/help`, `/usage`, `/logout`, `/exit`, `/quit`) for session management
-- Conversation history maintained as `MistralMessage[]` array with system prompt injection
-- Graceful shutdown handling for MCP server connections
-- Tool execution results fed back into conversation for AI followup
-- Prefer types over interfaces for type definitions
+- **Separation of Concerns**: Each module has a single, well-defined responsibility
+- **Custom React Hooks**: Encapsulate complex state logic and side effects
+- **Callback Pattern**: ConversationService uses callbacks for loose coupling with UI state
+- **React Component Composition**: Reusable components with readonly props following React best practices
+- **Centralized State Management**: useAppState hook manages all application state in one place
+- **Streaming responses** from Mistral API with real-time UI updates
+- **Slash commands** (`/help`, `/usage`, `/logout`, `/exit`, `/quit`) for session management
+- **Conversation history** maintained as `MistralMessage[]` array with system prompt injection
+- **Graceful shutdown** handling for MCP server connections via signal handlers
+- **Tool execution results** fed back into conversation for AI followup
+- **Prefer types over interfaces** for type definitions
+- **Boolean prop naming**: Use `isLoading` instead of `loading` for clarity
 
 ### System Prompt
 
 The system prompt (`source/prompts/system.ts`) configures the AI as "Mistrado" with specific behavior patterns:
+
 - Concise responses (≤4 lines unless detail requested)
 - Direct answers without preamble/postamble
 - File path references with `file_path:line_number` format

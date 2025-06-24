@@ -9,11 +9,11 @@ type ApiKeyInputProps = {
 };
 
 export default function Login({setApiKey}: ApiKeyInputProps) {
-	const [loading, setLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | undefined>();
 
 	const handleSubmit = async (input: string) => {
-		setLoading(true);
+		setIsLoading(true);
 		setError(undefined);
 
 		const cleanedInput = input.trim();
@@ -35,14 +35,14 @@ export default function Login({setApiKey}: ApiKeyInputProps) {
 			}
 		}
 
-		setLoading(false);
+		setIsLoading(false);
 	};
 
 	return (
 		<Box flexDirection="column" paddingX={2} gap={1}>
 			<Text color="blue">Welcome to Mistrado!</Text>
 			<Text>Please enter your Mistral API Key to get started:</Text>
-			{loading ? <Text color="blue">Storing key...</Text> : null}
+			{isLoading ? <Text color="blue">Storing key...</Text> : null}
 			{error ? <Text color="red">{error}</Text> : null}
 			<Box width="100%" gap={1} borderColor="grey" borderStyle="round">
 				<Text>&gt;</Text>
