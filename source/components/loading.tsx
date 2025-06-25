@@ -8,6 +8,7 @@ type LoadingProps = {
 export default function Loading({completionTokens = 0}: LoadingProps) {
 	const [secondsPassed, setSecondsPassed] = useState<number>(0);
 	const [displayedTokens, setDisplayedTokens] = useState<number>(0);
+	const [loadingIndicator, setLoadingIndicator] = useState<string>('~');
 
 	useEffect(() => {
 		const timer = setInterval(() => {
@@ -18,6 +19,19 @@ export default function Loading({completionTokens = 0}: LoadingProps) {
 			clearInterval(timer);
 		};
 	}, []);
+
+	useEffect(() => {
+		const loadingIndicators = ['~', '≈', '∿', '∼', '~', '≋'];
+
+		const timer = setInterval(() => {
+			const randomIndex = Math.round(Math.random() * loadingIndicators.length);
+			setLoadingIndicator(loadingIndicators[randomIndex] ?? '~');
+		}, 200);
+
+		return () => {
+			clearInterval(timer);
+		};
+	}, [setLoadingIndicator]);
 
 	// Animate token count changes
 	useEffect(() => {
@@ -59,6 +73,7 @@ export default function Loading({completionTokens = 0}: LoadingProps) {
 
 	return (
 		<Box gap={1}>
+			<Text color="blue">{loadingIndicator}</Text>
 			<Text color="blue">Pondering</Text>
 			<Text color="grey">{formatProgress()}</Text>
 		</Box>
