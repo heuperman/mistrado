@@ -91,11 +91,16 @@ export function useAppState() {
 		}
 	}, [sessionMessages.length]);
 
-	const addToHistory = (entry: Omit<ConversationEntry, 'id'>) => {
-		setConversationHistory(previous => [
-			...previous,
-			{id: previous.length, ...entry},
-		]);
+	const addToHistory = (entry: Omit<ConversationEntry, 'id'>): string => {
+		const id = crypto.randomUUID();
+		setConversationHistory(previous => [...previous, {id, ...entry}]);
+		return id;
+	};
+
+	const updateHistoryStatus = (id: string, status: 'success' | 'error') => {
+		setConversationHistory(previous =>
+			previous.map(entry => (entry.id === id ? {...entry, status} : entry)),
+		);
 	};
 
 	const logAndExit = (message: string) => {
@@ -159,6 +164,7 @@ export function useAppState() {
 		setShouldExit,
 		// Helpers
 		addToHistory,
+		updateHistoryStatus,
 		logAndExit,
 		updateUsage,
 		updateTokenCount,

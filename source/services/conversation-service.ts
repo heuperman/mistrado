@@ -10,16 +10,21 @@ import type {
 import type {MistralService} from './mistral-service.js';
 import type {McpManager} from './mcp-manager.js';
 
+export type ToolCallStatus = 'running' | 'success' | 'error';
+
 export type ConversationEntry = {
-	id: number;
+	id: string;
 	type: 'user' | 'assistant' | 'command' | 'tool';
 	content: string;
+	status?: ToolCallStatus;
+	toolCallId?: string;
 };
 
 type ConversationCallbacks = {
 	onUsageUpdate: (usage: UsageInfo, model: string) => void;
 	onError: React.Dispatch<React.SetStateAction<string | undefined>>;
-	onHistoryUpdate: (entry: Omit<ConversationEntry, 'id'>) => void;
+	onHistoryUpdate: (entry: Omit<ConversationEntry, 'id'>) => string;
+	onHistoryStatusUpdate: (id: string, status: 'success' | 'error') => void;
 	onMessagesUpdate: React.Dispatch<React.SetStateAction<MistralMessage[]>>;
 	onLoadingChange: (loading: boolean) => void;
 	onTokenProgress: (tokens: number) => void;
@@ -144,7 +149,7 @@ export class ConversationService {
 			}
 
 			// Display assistant text output
-			if (assistantTextOutputs.length > 0) {
+			if (assistantTextOutputs.some(output => output.length > 0)) {
 				callbacks.onHistoryUpdate({
 					type: 'assistant',
 					content: assistantTextOutputs.join('\n'),
@@ -214,14 +219,18 @@ export class ConversationService {
 
 			const toolCallResults = await Promise.allSettled(
 				toolCalls.map(async toolCall => {
+					let toolEntryId: string | undefined;
+
 					try {
 						if (!toolCall?.function?.name) {
 							throw new Error('Tool call missing function name');
 						}
 
-						callbacks.onHistoryUpdate({
+						toolEntryId = callbacks.onHistoryUpdate({
 							type: 'tool',
-							content: `Calling tool: ${toolCall.function.name}`,
+							content: `**${toolCall.function.name}**`,
+							status: 'running',
+							toolCallId: toolCall.id,
 						});
 
 						const result = await mcpManager.callTool(toolCall);
@@ -230,12 +239,17 @@ export class ConversationService {
 							throw new Error('Tool call returned empty result');
 						}
 
+						callbacks.onHistoryStatusUpdate(toolEntryId, 'success');
 						return {success: true, result: result as MistralMessage};
 					} catch (toolError) {
 						const errorMessage =
 							toolError instanceof Error
 								? toolError.message
 								: String(toolError);
+
+						if (toolEntryId !== undefined) {
+							callbacks.onHistoryStatusUpdate(toolEntryId, 'error');
+						}
 
 						callbacks.onError(
 							`Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`,

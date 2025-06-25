@@ -54,7 +54,7 @@ class ToolServer {
 				return handleEditTool(args);
 			}
 
-			if (toolName === 'ls') {
+			if (toolName === 'list') {
 				const args = request.params.arguments as {
 					path: string;
 					ignore?: string[];

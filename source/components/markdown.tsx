@@ -10,7 +10,6 @@ export type Props = TerminalRendererOptions & {
 
 export default function Markdown({children, ...options}: Props) {
 	marked.setOptions({
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		renderer: new TerminalRenderer({
 			heading: chalk.reset.bold,
 			firstHeading: chalk.reset.bold.underline,

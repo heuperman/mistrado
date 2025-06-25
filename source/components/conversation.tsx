@@ -1,6 +1,9 @@
 import React from 'react';
 import {Box, Text} from 'ink';
-import type {ConversationEntry} from '../services/conversation-service.js';
+import type {
+	ConversationEntry,
+	ToolCallStatus,
+} from '../services/conversation-service.js';
 import Loading from './loading.js';
 import Markdown from './markdown.js';
 
@@ -17,6 +20,13 @@ export default function Conversation({
 	errorOutput,
 	currentTokenCount,
 }: ConversationProps) {
+	const getStatusColor = (status: ToolCallStatus | undefined) => {
+		if (status === 'error') return 'red';
+		if (status === 'success') return 'green';
+		if (status === 'running') return 'blue';
+		return 'white';
+	};
+
 	return (
 		<>
 			{history.map(entry => (
@@ -29,9 +39,19 @@ export default function Conversation({
 							</Box>
 						</Box>
 					)}
-					{entry.type === 'assistant' && <Markdown>{entry.content}</Markdown>}
+					{entry.type === 'assistant' && (
+						<Box flexDirection="row" gap={1}>
+							<Text>●</Text>
+							<Markdown>{entry.content}</Markdown>
+						</Box>
+					)}
 					{entry.type === 'command' && <Markdown>{entry.content}</Markdown>}
-					{entry.type === 'tool' && <Markdown>{entry.content}</Markdown>}
+					{entry.type === 'tool' && (
+						<Box flexDirection="row" gap={1}>
+							<Text color={getStatusColor(entry.status)}>●</Text>
+							<Markdown>{entry.content}</Markdown>
+						</Box>
+					)}
 				</Box>
 			))}
 			{isLoading ? <Loading completionTokens={currentTokenCount} /> : null}
