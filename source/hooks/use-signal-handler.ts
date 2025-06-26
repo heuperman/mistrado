@@ -6,7 +6,6 @@ import type {McpManager} from '../services/mcp-manager.js';
 export function useSignalHandler(
 	mcpManager: McpManager | undefined,
 	shouldExit: boolean,
-	setShouldExit: (value: boolean) => void,
 ) {
 	const {exit} = useApp();
 
@@ -26,21 +25,4 @@ export function useSignalHandler(
 			void handleGracefulExit();
 		}
 	}, [shouldExit, exit, mcpManager]);
-
-	// Handle SIGINT and SIGTERM signals
-	useEffect(() => {
-		const handleSignal = () => {
-			if (mcpManager) {
-				setShouldExit(true);
-			}
-		};
-
-		process.on('SIGINT', handleSignal);
-		process.on('SIGTERM', handleSignal);
-
-		return () => {
-			process.removeListener('SIGINT', handleSignal);
-			process.removeListener('SIGTERM', handleSignal);
-		};
-	}, [mcpManager, setShouldExit]);
 }

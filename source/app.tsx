@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Text} from 'ink';
+import {Box, Text, useInput} from 'ink';
 import TextInput from 'ink-text-input';
 import Login from './components/login.js';
 import Hero from './components/hero.js';
@@ -39,7 +39,13 @@ export default function App() {
 		resetTokenCount,
 	} = useAppState();
 
-	useSignalHandler(mcpManager, shouldExit, setShouldExit);
+	useSignalHandler(mcpManager, shouldExit);
+
+	useInput((input, key) => {
+		if (key.ctrl && input === 'c') {
+			setShouldExit(true);
+		}
+	});
 
 	const handleSubmit = async (promptInput: string) => {
 		setIsLoading(true);
