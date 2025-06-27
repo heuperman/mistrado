@@ -74,7 +74,7 @@ export default function Loading({completionTokens = 0}: LoadingProps) {
 	return (
 		<Box gap={1}>
 			<Text color="blue">{loadingIndicator}</Text>
-			<Text color="blue">Pondering</Text>
+			<Text color="blue">Pondering...</Text>
 			<Text color="grey">{formatProgress()}</Text>
 		</Box>
 	);

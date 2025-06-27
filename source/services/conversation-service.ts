@@ -7,6 +7,7 @@ import type {
 	MistralTool,
 	MistralToolCall,
 } from '../types/mistral.js';
+import {formatToolCallDisplay} from '../utils/app-utils.js';
 import type {MistralService} from './mistral-service.js';
 import type {McpManager} from './mcp-manager.js';
 
@@ -228,7 +229,10 @@ export class ConversationService {
 
 						toolEntryId = callbacks.onHistoryUpdate({
 							type: 'tool',
-							content: `**${toolCall.function.name}**`,
+							content: formatToolCallDisplay(
+								toolCall.function.name,
+								toolCall.function.arguments,
+							),
 							status: 'running',
 							toolCallId: toolCall.id,
 						});
