@@ -3,6 +3,7 @@ import type {
 	UsageInfo,
 } from '@mistralai/mistralai/models/components/index.js';
 import type {
+	MistralContentChunk,
 	MistralMessage,
 	MistralTool,
 	MistralToolCall,
@@ -124,13 +125,14 @@ export class ConversationService {
 
 				updatedMessages.push(message as MistralMessage);
 
-				// Extract text content
+				// Extract text content and tool calls from content array
 				if (typeof message.content === 'string') {
 					assistantTextOutputs.push(message.content);
 				} else if (Array.isArray(message.content)) {
 					this.extractTextFromContentArray(
-						message.content,
+						message.content as MistralContentChunk[],
 						assistantTextOutputs,
+						toolCalls,
 					);
 				}
 
@@ -170,21 +172,58 @@ export class ConversationService {
 	}
 
 	private extractTextFromContentArray(
-		content: unknown[],
+		content: MistralContentChunk[],
 		outputs: string[],
+		toolCalls: MistralToolCall[],
 	): void {
 		for (const chunk of content) {
-			if (
-				chunk &&
-				typeof chunk === 'object' &&
-				'type' in chunk &&
-				chunk.type === 'text' &&
-				'text' in chunk &&
-				typeof chunk.text === 'string'
-			) {
-				outputs.push(chunk.text);
+			if (chunk && typeof chunk === 'object' && 'type' in chunk) {
+				if (
+					chunk.type === 'text' &&
+					'text' in chunk &&
+					typeof chunk.text === 'string'
+				) {
+					outputs.push(chunk.text);
+				} else if (chunk.type === 'function') {
+					// Extract tool call from function-type content
+					const toolCall = this.extractToolCallFromFunctionChunk(chunk);
+					if (toolCall && this.isValidToolCall(toolCall)) {
+						toolCalls.push(toolCall);
+					}
+				}
 			}
 		}
+	}
+
+	private extractToolCallFromFunctionChunk(
+		chunk: MistralContentChunk,
+	): MistralToolCall | undefined {
+		if (
+			chunk === null ||
+			typeof chunk !== 'object' ||
+			!('function' in chunk) ||
+			chunk.function === null ||
+			typeof chunk.function !== 'object' ||
+			typeof chunk.function.name !== 'string'
+		) {
+			return undefined;
+		}
+
+		const toolCall: MistralToolCall = {
+			id: typeof chunk?.id === 'string' ? chunk.id : crypto.randomUUID(),
+			type: 'function',
+			function: {
+				name: chunk.function.name,
+				arguments:
+					typeof chunk.function.arguments === 'string' ||
+					(typeof chunk.function.arguments === 'object' &&
+						chunk.function.arguments !== null)
+						? chunk.function.arguments
+						: {},
+			},
+		};
+
+		return toolCall;
 	}
 
 	private isValidToolCall(toolCall: unknown): toolCall is MistralToolCall {

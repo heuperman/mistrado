@@ -51,10 +51,20 @@ type MistralReferenceChunk = {
 	referenceIds: number[];
 };
 
-type MistralContentChunk =
+type MistralFunctionChunk = {
+	type: 'function';
+	id?: string;
+	function: {
+		name: string;
+		arguments: Record<string, unknown> | string;
+	};
+};
+
+export type MistralContentChunk =
 	| MistralTextChunk
 	| MistralImageUrlChunk
-	| MistralReferenceChunk;
+	| MistralReferenceChunk
+	| MistralFunctionChunk;
 
 export type MistralToolMessage = {
 	role: 'tool';
