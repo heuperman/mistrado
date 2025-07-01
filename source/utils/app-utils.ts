@@ -1,6 +1,6 @@
 import {execSync} from 'node:child_process';
-import * as path from 'node:path';
 import process from 'node:process';
+import {makePathRelative, shortenPathForDisplay} from './paths.js';
 
 export function isGitRepo(): boolean {
 	try {
@@ -21,7 +21,7 @@ export function formatToolCallDisplay(
 	toolName: string,
 	toolArguments: Record<string, unknown> | string,
 ): string {
-	const baseDisplay = `**${toolName}**`;
+	const toolNameToDisplay = `**${toolName}**`;
 
 	try {
 		const args =
@@ -30,7 +30,7 @@ export function formatToolCallDisplay(
 				: toolArguments;
 
 		if (!args || typeof args !== 'object') {
-			return baseDisplay;
+			return toolNameToDisplay;
 		}
 
 		const pathArgumentMap: Record<string, string> = {
@@ -43,43 +43,19 @@ export function formatToolCallDisplay(
 
 		const pathKey = pathArgumentMap[toolName.toLowerCase()];
 		if (!pathKey || !(pathKey in args)) {
-			return baseDisplay;
+			return toolNameToDisplay;
 		}
 
 		const absolutePath = args[pathKey] as string;
 		if (typeof absolutePath !== 'string') {
-			return baseDisplay;
+			return toolNameToDisplay;
 		}
 
-		const relativePath = formatPathForDisplay(absolutePath);
-		return `${baseDisplay}(${relativePath})`;
+		const pathToDisplay = shortenPathForDisplay(
+			makePathRelative(absolutePath, process.cwd()),
+		);
+		return `${toolNameToDisplay}(${pathToDisplay})`;
 	} catch {
-		return baseDisplay;
-	}
-}
-
-/**
- * Converts an absolute path to a relative path and truncates if too long
- * @param absolutePath The absolute file path
- * @returns Formatted relative path, truncated if necessary
- */
-function formatPathForDisplay(absolutePath: string): string {
-	try {
-		const relativePath = path.relative(process.cwd(), absolutePath);
-
-		const displayPath =
-			relativePath.length < absolutePath.length &&
-			!relativePath.startsWith('../')
-				? relativePath
-				: absolutePath;
-
-		const maxLength = 50;
-		if (displayPath.length > maxLength) {
-			return `...${displayPath.slice(-(maxLength - 3))}`;
-		}
-
-		return displayPath;
-	} catch {
-		return absolutePath;
+		return toolNameToDisplay;
 	}
 }
