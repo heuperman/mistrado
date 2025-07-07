@@ -5,7 +5,7 @@ import {getSecret} from '../services/secrets-service.js';
 import {MistralService} from '../services/mistral-service.js';
 import {McpManager} from '../services/mcp-manager.js';
 import {getMainSystemPrompt} from '../prompts/system.js';
-import {isGitRepo} from '../utils/app-utils.js';
+import {isGitRepo} from '../utils/git.js';
 import type {MistralMessage} from '../types/mistral.js';
 import type {ConversationEntry} from '../services/conversation-service.js';
 
@@ -80,10 +80,12 @@ export function useAppState() {
 	// Initialize system prompt
 	useEffect(() => {
 		if (sessionMessages.length === 0) {
+			const workingDirectoryPath = process.cwd();
+
 			setSessionMessages([
 				getMainSystemPrompt({
-					workingDirectoryPath: process.cwd(),
-					isGitRepo: isGitRepo(),
+					workingDirectoryPath,
+					isGitRepo: isGitRepo(workingDirectoryPath),
 					platform: process.platform,
 					todayDate: new Date(),
 				}),

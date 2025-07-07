@@ -1,15 +1,5 @@
-import {execSync} from 'node:child_process';
 import process from 'node:process';
 import {makePathRelative, shortenPathForDisplay} from './paths.js';
-
-export function isGitRepo(): boolean {
-	try {
-		execSync('git rev-parse --git-dir', {stdio: 'ignore'});
-		return true;
-	} catch {
-		return false;
-	}
-}
 
 /**
  * Formats a tool call with its primary argument for display in the conversation
