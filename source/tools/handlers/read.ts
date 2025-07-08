@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
+import {validateSchema} from '../../utils/validation.js';
 
 export const readTool: Tool = {
 	name: 'Read',
@@ -29,18 +30,36 @@ export const readTool: Tool = {
 	},
 };
 
-export async function handleReadTool(args: {
-	filePath: string;
-	offset?: number;
-	limit?: number;
-}) {
+export async function handleReadTool(args: unknown) {
+	const validation = validateSchema<{
+		filePath: string;
+		offset?: number;
+		limit?: number;
+	}>(args, readTool.inputSchema, 'Read');
+
+	if (!validation.success) {
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: validation.error,
+				},
+			],
+			isError: true,
+		};
+	}
+
 	try {
 		// Validate that the path is absolute
-		if (!path.isAbsolute(args.filePath)) {
+		if (!path.isAbsolute(validation.data.filePath)) {
 			throw new Error('File path must be absolute');
 		}
 
-		const result = await readFile(args.filePath, args.offset, args.limit);
+		const result = await readFile(
+			validation.data.filePath,
+			validation.data.offset,
+			validation.data.limit,
+		);
 
 		return {
 			content: [

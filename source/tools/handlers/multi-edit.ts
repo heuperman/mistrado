@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
+import {validateSchema} from '../../utils/validation.js';
 
 type EditOperation = {
 	oldString: string;
@@ -57,12 +58,27 @@ export const multiEditTool: Tool = {
 	},
 };
 
-export async function handleMultiEditTool(args: MultiEditArgs) {
-	try {
-		// Validate arguments
-		validateArgs(args);
+export async function handleMultiEditTool(args: unknown) {
+	const validation = validateSchema<MultiEditArgs>(
+		args,
+		multiEditTool.inputSchema,
+		'MultiEdit',
+	);
 
-		const {filePath, edits} = args;
+	if (!validation.success) {
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: validation.error,
+				},
+			],
+			isError: true,
+		};
+	}
+
+	try {
+		const {filePath, edits} = validation.data;
 
 		// Check if file path is absolute
 		if (!path.isAbsolute(filePath)) {
@@ -148,37 +164,5 @@ export async function handleMultiEditTool(args: MultiEditArgs) {
 			],
 			isError: true,
 		};
-	}
-}
-
-function validateArgs(args: MultiEditArgs): asserts args is MultiEditArgs {
-	if (!args || typeof args !== 'object') {
-		throw new Error('Invalid arguments: must be an object');
-	}
-
-	if (!args.filePath || typeof args.filePath !== 'string') {
-		throw new Error('Invalid filePath: must be a non-empty string');
-	}
-
-	if (!Array.isArray(args.edits) || args.edits.length === 0) {
-		throw new Error('Invalid edits: must be a non-empty array');
-	}
-
-	for (const [i, edit] of args.edits.entries()) {
-		if (!edit || typeof edit !== 'object') {
-			throw new Error(`Invalid edit ${i + 1}: must be an object`);
-		}
-
-		if (typeof edit.oldString !== 'string') {
-			throw new TypeError(`Invalid edit ${i + 1}: oldString must be a string`);
-		}
-
-		if (typeof edit.newString !== 'string') {
-			throw new TypeError(`Invalid edit ${i + 1}: newString must be a string`);
-		}
-
-		if (edit.replaceAll !== undefined && typeof edit.replaceAll !== 'boolean') {
-			throw new Error(`Invalid edit ${i + 1}: replaceAll must be a boolean`);
-		}
 	}
 }

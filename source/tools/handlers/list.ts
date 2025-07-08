@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {minimatch} from 'minimatch';
+import {validateSchema} from '../../utils/validation.js';
 
 type LsToolArgs = {
 	path: string;
@@ -33,12 +34,28 @@ export const lsTool: Tool = {
 	},
 };
 
-export async function handleLsTool(args: LsToolArgs) {
+export async function handleLsTool(args: unknown) {
+	const validation = validateSchema<LsToolArgs>(
+		args,
+		lsTool.inputSchema,
+		'List',
+	);
+
+	if (!validation.success) {
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: validation.error,
+				},
+			],
+			isError: true,
+		};
+	}
+
 	try {
-		validateArguments(args);
-		const {path: targetPath, ignore = []} = args;
+		const {path: targetPath, ignore = []} = validation.data;
 		validatePath(targetPath);
-		validateIgnorePatterns(ignore);
 
 		const entries = readDirectory(targetPath);
 		const results = processEntries(entries, targetPath, ignore);
@@ -59,17 +76,7 @@ export async function handleLsTool(args: LsToolArgs) {
 	}
 }
 
-function validateArguments(args: LsToolArgs) {
-	if (!args || typeof args !== 'object') {
-		throw new Error('Invalid arguments: expected an object');
-	}
-}
-
 function validatePath(targetPath: string) {
-	if (!targetPath || typeof targetPath !== 'string') {
-		throw new Error('Invalid path: must be a non-empty string');
-	}
-
 	if (!path.isAbsolute(targetPath)) {
 		throw new Error('Invalid path: must be an absolute path, not relative');
 	}
@@ -81,20 +88,6 @@ function validatePath(targetPath: string) {
 	const stats = fs.statSync(targetPath);
 	if (!stats.isDirectory()) {
 		throw new Error(`Path is not a directory: ${targetPath}`);
-	}
-}
-
-function validateIgnorePatterns(ignore: string[]) {
-	if (!Array.isArray(ignore)) {
-		throw new TypeError('Invalid ignore parameter: must be an array');
-	}
-
-	for (const pattern of ignore) {
-		if (typeof pattern !== 'string') {
-			throw new TypeError(
-				'Invalid ignore pattern: all patterns must be strings',
-			);
-		}
 	}
 }
 

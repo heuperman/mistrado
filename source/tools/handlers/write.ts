@@ -1,6 +1,7 @@
 import {promises as fs} from 'node:fs';
 import {dirname} from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
+import {validateSchema} from '../../utils/validation.js';
 
 export const writeTool: Tool = {
 	name: 'Write',
@@ -24,28 +25,49 @@ export const writeTool: Tool = {
 	},
 };
 
-export async function handleWriteTool(args: {
-	filePath: string;
-	content: string;
-}) {
+export async function handleWriteTool(args: unknown) {
+	const validation = validateSchema<{
+		filePath: string;
+		content: string;
+	}>(args, writeTool.inputSchema, 'Write');
+
+	if (!validation.success) {
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: validation.error,
+				},
+			],
+			isError: true,
+		};
+	}
+
 	try {
 		// Validate that the path is absolute
-		if (!args.filePath.startsWith('/') && !/^[A-Za-z]:\\/.test(args.filePath)) {
+		if (
+			!validation.data.filePath.startsWith('/') &&
+			!/^[A-Za-z]:\\/.test(validation.data.filePath)
+		) {
 			throw new Error('File path must be absolute, not relative');
 		}
 
 		// Ensure the directory exists
-		const dir = dirname(args.filePath);
+		const dir = dirname(validation.data.filePath);
 		await fs.mkdir(dir, {recursive: true});
 
 		// Write the file
-		await fs.writeFile(args.filePath, args.content, 'utf8');
+		await fs.writeFile(
+			validation.data.filePath,
+			validation.data.content,
+			'utf8',
+		);
 
 		return {
 			content: [
 				{
 					type: 'text' as const,
-					text: `Successfully wrote file: ${args.filePath}`,
+					text: `Successfully wrote file: ${validation.data.filePath}`,
 				},
 			],
 		};

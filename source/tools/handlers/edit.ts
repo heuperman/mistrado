@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
+import {validateSchema} from '../../utils/validation.js';
 
 export const editTool: Tool = {
 	name: 'Edit',
@@ -33,18 +34,32 @@ export const editTool: Tool = {
 	},
 };
 
-export async function handleEditTool(args: {
-	filePath: string;
-	oldString: string;
-	newString: string;
-	replaceAll?: boolean;
-}) {
+export async function handleEditTool(args: unknown) {
+	const validation = validateSchema<{
+		filePath: string;
+		oldString: string;
+		newString: string;
+		replaceAll?: boolean;
+	}>(args, editTool.inputSchema, 'Edit');
+
+	if (!validation.success) {
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: validation.error,
+				},
+			],
+			isError: true,
+		};
+	}
+
 	try {
 		const result = await editFile(
-			args.filePath,
-			args.oldString,
-			args.newString,
-			args.replaceAll ?? false,
+			validation.data.filePath,
+			validation.data.oldString,
+			validation.data.newString,
+			validation.data.replaceAll ?? false,
 		);
 
 		return {

@@ -45,50 +45,23 @@ class ToolServer {
 			const toolName = request.params.name.toLowerCase();
 
 			if (toolName === 'edit') {
-				const args = request.params.arguments as {
-					filePath: string;
-					oldString: string;
-					newString: string;
-					replaceAll?: boolean;
-				};
-				return handleEditTool(args);
+				return handleEditTool(request.params.arguments);
 			}
 
 			if (toolName === 'list') {
-				const args = request.params.arguments as {
-					path: string;
-					ignore?: string[];
-				};
-				return handleLsTool(args);
+				return handleLsTool(request.params.arguments);
 			}
 
 			if (toolName === 'write') {
-				const args = request.params.arguments as {
-					filePath: string;
-					content: string;
-				};
-				return handleWriteTool(args);
+				return handleWriteTool(request.params.arguments);
 			}
 
 			if (toolName === 'read') {
-				const args = request.params.arguments as {
-					filePath: string;
-					offset?: number;
-					limit?: number;
-				};
-				return handleReadTool(args);
+				return handleReadTool(request.params.arguments);
 			}
 
 			if (toolName === 'multiedit') {
-				const args = request.params.arguments as {
-					filePath: string;
-					edits: Array<{
-						oldString: string;
-						newString: string;
-						replaceAll?: boolean;
-					}>;
-				};
-				return handleMultiEditTool(args);
+				return handleMultiEditTool(request.params.arguments);
 			}
 
 			throw new Error(`Unknown tool: ${request.params.name}`);
