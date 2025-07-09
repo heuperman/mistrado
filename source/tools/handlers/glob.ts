@@ -4,11 +4,17 @@ import process from 'node:process';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../../utils/validation.js';
 import {globToRegex} from '../../utils/regex.js';
+import {
+	parseGitignore,
+	shouldIgnoreFile,
+	type GitignorePattern,
+} from '../../utils/gitignore.js';
+import {findGitRoot} from '../../utils/git.js';
 
 export const globTool: Tool = {
 	name: 'Glob',
 	description:
-		'Fast file pattern matching tool that efficiently finds files matching specific glob patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths sorted by modification time (newest first). Supports glob patterns with wildcards, directory traversal, and file extensions.',
+		'Fast file pattern matching tool that efficiently finds files matching specific glob patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths sorted by modification time (newest first). Supports glob patterns with wildcards, directory traversal, and file extensions. Automatically excludes files listed in .gitignore unless includeIgnored is true.',
 	inputSchema: {
 		type: 'object',
 		properties: {
@@ -22,6 +28,12 @@ export const globTool: Tool = {
 				description:
 					'The base directory to search from (defaults to current working directory)',
 			},
+			includeIgnored: {
+				type: 'boolean',
+				default: false,
+				description:
+					'Include files and directories listed in .gitignore (defaults to false)',
+			},
 		},
 		required: ['pattern'],
 		additionalProperties: false,
@@ -32,6 +44,7 @@ export async function handleGlobTool(args: unknown) {
 	const validation = validateSchema<{
 		pattern: string;
 		basePath?: string;
+		includeIgnored?: boolean;
 	}>(args, globTool.inputSchema, 'Glob');
 	if (!validation.success) {
 		return {
@@ -49,6 +62,7 @@ export async function handleGlobTool(args: unknown) {
 		const result = await findGlobMatches(
 			validation.data.pattern,
 			validation.data.basePath ?? process.cwd(),
+			validation.data.includeIgnored ?? false,
 		);
 
 		return {
@@ -78,9 +92,18 @@ type FileMatch = {
 	modifiedTime: Date;
 };
 
+type WalkContext = {
+	basePath: string;
+	regex: RegExp;
+	matches: FileMatch[];
+	gitignorePatterns: GitignorePattern[];
+	gitRoot: string | undefined;
+};
+
 async function findGlobMatches(
 	pattern: string,
 	basePath: string,
+	includeIgnored: boolean,
 ): Promise<string> {
 	if (!pattern) {
 		throw new Error('Pattern is required');
@@ -97,7 +120,19 @@ async function findGlobMatches(
 	const regex = globToRegex(pattern, {extended: true, globstar: true});
 	const matches: FileMatch[] = [];
 
-	await walkDirectory(absoluteBasePath, absoluteBasePath, regex, matches);
+	// Load gitignore patterns if not including ignored files
+	const gitignorePatterns = includeIgnored
+		? []
+		: await parseGitignore(absoluteBasePath);
+	const gitRoot = findGitRoot(absoluteBasePath);
+
+	await walkDirectory(absoluteBasePath, {
+		basePath: absoluteBasePath,
+		regex,
+		matches,
+		gitignorePatterns,
+		gitRoot,
+	});
 
 	// Sort by modification time (newest first)
 	matches.sort((a, b) => b.modifiedTime.getTime() - a.modifiedTime.getTime());
@@ -112,25 +147,31 @@ async function findGlobMatches(
 
 async function walkDirectory(
 	currentPath: string,
-	basePath: string,
-	regex: RegExp,
-	matches: FileMatch[],
+	context: WalkContext,
 ): Promise<void> {
 	try {
 		const entries = await fs.readdir(currentPath, {withFileTypes: true});
 
 		const promises = entries.map(async entry => {
 			const fullPath = path.join(currentPath, entry.name);
-			const relativePath = path.relative(basePath, fullPath);
+			const relativePath = path.relative(context.basePath, fullPath);
 
-			if (entry.isDirectory()) {
-				return walkDirectory(fullPath, basePath, regex, matches);
+			// Check if file/directory should be ignored based on gitignore
+			if (context.gitignorePatterns.length > 0 && context.gitRoot) {
+				const gitRelativePath = path.relative(context.gitRoot, fullPath);
+				if (shouldIgnoreFile(gitRelativePath, context.gitignorePatterns)) {
+					return;
+				}
 			}
 
-			if (entry.isFile() && regex.test(relativePath)) {
+			if (entry.isDirectory()) {
+				return walkDirectory(fullPath, context);
+			}
+
+			if (entry.isFile() && context.regex.test(relativePath)) {
 				try {
 					const stats = await fs.stat(fullPath);
-					matches.push({
+					context.matches.push({
 						absolutePath: fullPath,
 						modifiedTime: stats.mtime,
 					});
