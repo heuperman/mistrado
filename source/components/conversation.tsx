@@ -30,7 +30,7 @@ export default function Conversation({
 	return (
 		<>
 			{history.map(entry => (
-				<Box key={entry.id} marginBottom={1}>
+				<Box key={entry.id}>
 					{entry.type === 'user' && (
 						<Box flexDirection="row" paddingLeft={0}>
 							<Text color="gray">&gt; </Text>
