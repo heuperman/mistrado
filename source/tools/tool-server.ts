@@ -10,6 +10,7 @@ import {writeTool, handleWriteTool} from './handlers/write.js';
 import {readTool, handleReadTool} from './handlers/read.js';
 import {multiEditTool, handleMultiEditTool} from './handlers/multi-edit.js';
 import {globTool, handleGlobTool} from './handlers/glob.js';
+import {grepTool, handleGrepTool} from './handlers/grep.js';
 
 class ToolServer {
 	private readonly server: Server;
@@ -38,7 +39,15 @@ class ToolServer {
 	private setupToolHandlers(): void {
 		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
-				tools: [editTool, lsTool, writeTool, readTool, multiEditTool, globTool],
+				tools: [
+					editTool,
+					lsTool,
+					writeTool,
+					readTool,
+					multiEditTool,
+					globTool,
+					grepTool,
+				],
 			};
 		});
 
@@ -67,6 +76,10 @@ class ToolServer {
 
 			if (toolName === 'glob') {
 				return handleGlobTool(request.params.arguments);
+			}
+
+			if (toolName === 'grep') {
+				return handleGrepTool(request.params.arguments);
 			}
 
 			throw new Error(`Unknown tool: ${request.params.name}`);

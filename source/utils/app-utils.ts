@@ -30,6 +30,7 @@ export function formatToolCallDisplay(
 			list: 'path',
 			'multi-edit': 'filePath',
 			glob: 'pattern',
+			grep: 'pattern',
 		};
 
 		const pathKey = pathArgumentMap[toolName.toLowerCase()];
