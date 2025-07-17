@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
 import {Mistral} from '@mistralai/mistralai';
 import type {
 	CompletionEvent,
@@ -9,6 +12,10 @@ import type {
 } from '@mistralai/mistralai/models/components/index.js';
 import type {EventStream} from '@mistralai/mistralai/lib/event-streams.js';
 import {type MistralMessage} from '../types/mistral.js';
+
+type Settings = {
+	model: string;
+};
 
 type SuccessResponse = {
 	error: undefined;
@@ -44,7 +51,7 @@ export class MistralService {
 		tools: Tool[] = [],
 		onTokenProgress?: TokenProgressCallback,
 	): Promise<ResponseResult> {
-		const model = 'devstral-small-2505';
+		const model = this.getModelFromSettings();
 
 		if (!this.client) {
 			throw new Error(
@@ -66,6 +73,22 @@ export class MistralService {
 				assistantMessages: [],
 				model,
 			};
+		}
+	}
+
+	private getModelFromSettings(): string {
+		try {
+			const settingsPath = path.join(
+				process.cwd(),
+				'.mistrado',
+				'settings.json',
+			);
+			const settingsContent = fs.readFileSync(settingsPath, 'utf8');
+			const settings = JSON.parse(settingsContent) as Settings;
+			return settings.model;
+		} catch {
+			// Fallback to default model if settings file doesn't exist or is invalid
+			return 'devstral-small-2507';
 		}
 	}
 

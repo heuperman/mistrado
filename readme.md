@@ -5,7 +5,7 @@ A terminal-based conversational interface for Mistral AI, built with Ink and Rea
 ## Features
 
 - **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
-- **Streaming AI Responses**: Real-time streaming from Mistral AI's `devstral-small-2505` model
+- **Streaming AI Responses**: Real-time streaming from Mistral AI's `devstral-small-2507` model
 - **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management
 - **MCP Tool Integration**: Built-in filesystem tools (read, write, edit, ls, multi-edit) via Model Context Protocol
 - **Modular Architecture**: Clean separation of concerns with React hooks and service layers

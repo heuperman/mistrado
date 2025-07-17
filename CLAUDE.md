@@ -47,7 +47,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 #### Services Layer
 
 - **ConversationService** (`source/services/conversation-service.ts`): Handles AI interactions, tool calling, and conversation flow with callback-based architecture
-- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using `devstral-small-2505` model
+- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using `devstral-small-2507` model
 - **McpManager** (`source/services/mcp-manager.ts`): Orchestrates multiple MCP servers, maps tools to servers, handles parallel tool execution
 - **McpClient** (`source/services/mcp-client.ts`): Individual MCP server connection management with stdio transport
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
