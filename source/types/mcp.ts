@@ -52,7 +52,7 @@ type McpAudioContent = {
 	mimeType: string;
 };
 
-type McpContent =
+export type McpContent =
 	| McpTextContent
 	| McpImageContent
 	| McpResourceContent
