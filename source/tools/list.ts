@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {minimatch} from 'minimatch';
-import {validateSchema} from '../../utils/validation.js';
+import {validateSchema} from '../utils/validation.js';
 
 type LsToolArgs = {
 	path: string;

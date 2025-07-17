@@ -1,7 +1,7 @@
 import {promises as fs} from 'node:fs';
 import {dirname} from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
-import {validateSchema} from '../../utils/validation.js';
+import {validateSchema} from '../utils/validation.js';
 
 export const writeTool: Tool = {
 	name: 'Write',

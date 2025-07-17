@@ -2,13 +2,13 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import process from 'node:process';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
-import {validateSchema} from '../../utils/validation.js';
+import {validateSchema} from '../utils/validation.js';
 import {
 	parseGitignore,
 	shouldIgnoreFile,
 	type GitignorePattern,
-} from '../../utils/gitignore.js';
-import {findGitRoot} from '../../utils/git.js';
+} from '../utils/gitignore.js';
+import {findGitRoot} from '../utils/git.js';
 
 export const grepTool: Tool = {
 	name: 'Grep',

@@ -5,16 +5,13 @@ import type {
 	MistralToolMessage,
 } from '../types/mistral.js';
 import type {McpCallToolResult} from '../types/mcp.js';
-import {editTool, handleEditTool} from '../tools/handlers/edit.js';
-import {lsTool, handleLsTool} from '../tools/handlers/list.js';
-import {writeTool, handleWriteTool} from '../tools/handlers/write.js';
-import {readTool, handleReadTool} from '../tools/handlers/read.js';
-import {
-	multiEditTool,
-	handleMultiEditTool,
-} from '../tools/handlers/multi-edit.js';
-import {globTool, handleGlobTool} from '../tools/handlers/glob.js';
-import {grepTool, handleGrepTool} from '../tools/handlers/grep.js';
+import {editTool, handleEditTool} from '../tools/edit.js';
+import {lsTool, handleLsTool} from '../tools/list.js';
+import {writeTool, handleWriteTool} from '../tools/write.js';
+import {readTool, handleReadTool} from '../tools/read.js';
+import {multiEditTool, handleMultiEditTool} from '../tools/multi-edit.js';
+import {globTool, handleGlobTool} from '../tools/glob.js';
+import {grepTool, handleGrepTool} from '../tools/grep.js';
 
 export class ToolManager {
 	private readonly tools = new Map<string, MistralTool>();
@@ -24,13 +21,13 @@ export class ToolManager {
 	>();
 
 	constructor() {
-		this.registerTool('edit', editTool, handleEditTool);
-		this.registerTool('list', lsTool, handleLsTool);
-		this.registerTool('write', writeTool, handleWriteTool);
-		this.registerTool('read', readTool, handleReadTool);
-		this.registerTool('multiedit', multiEditTool, handleMultiEditTool);
-		this.registerTool('glob', globTool, handleGlobTool);
-		this.registerTool('grep', grepTool, handleGrepTool);
+		this.registerTool(editTool, handleEditTool);
+		this.registerTool(lsTool, handleLsTool);
+		this.registerTool(writeTool, handleWriteTool);
+		this.registerTool(readTool, handleReadTool);
+		this.registerTool(multiEditTool, handleMultiEditTool);
+		this.registerTool(globTool, handleGlobTool);
+		this.registerTool(grepTool, handleGrepTool);
 	}
 
 	getAvailableTools(): MistralTool[] {
@@ -74,7 +71,6 @@ export class ToolManager {
 	}
 
 	private registerTool(
-		name: string,
 		tool: Tool,
 		handler: (args: unknown) => Promise<McpCallToolResult>,
 	): void {
@@ -87,6 +83,8 @@ export class ToolManager {
 				parameters: tool.inputSchema,
 			},
 		};
+
+		const name = tool.name.toLowerCase();
 
 		this.tools.set(name, mistralTool);
 		this.handlers.set(name, this.wrapHandler(handler));
