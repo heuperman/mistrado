@@ -10,20 +10,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is an Ink-based CLI application that provides a conversational interface to Mistral AI's API. The application uses React components to render a terminal UI and integrates with MCP (Model Context Protocol) to provide filesystem tools.
+This is an Ink-based CLI application that provides a conversational interface to Mistral AI's API. The application uses React components to render a terminal UI and provides built-in filesystem and search tools.
 
 ### Core Flow
 
-The app initializes three main systems concurrently:
+The app initializes two main systems concurrently:
 
 1. **Mistral API client** - for AI conversations
-2. **MCP Manager** - coordinates multiple MCP servers for tool execution
-3. **Built-in Tool Server** - provides filesystem operations (read, write, edit, ls, multi-edit)
+2. **Tool Manager** - provides built-in filesystem and search tools
 
 When users submit prompts, the app:
 
-1. Sends message + available MCP tools to Mistral API
-2. If AI responds with tool calls, executes them via MCP Manager
+1. Sends message + available tools to Mistral API
+2. If AI responds with tool calls, executes them via Tool Manager
 3. Returns tool results to continue the conversation
 4. Displays streaming responses in real-time terminal UI
 
@@ -38,6 +37,8 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **Conversation** (`source/components/conversation.tsx`): Reusable component for displaying conversation history with message type styling
 - **Login** (`source/components/login.tsx`): Secure API key input and storage interface
 - **Hero** (`source/components/hero.tsx`): Welcome/branding display
+- **Loading** (`source/components/loading.tsx`): Loading indicator with token progress display
+- **Markdown** (`source/components/markdown.tsx`): Markdown rendering component
 
 #### Custom Hooks
 
@@ -47,9 +48,8 @@ The codebase follows a modular architecture with clear separation of concerns:
 #### Services Layer
 
 - **ConversationService** (`source/services/conversation-service.ts`): Handles AI interactions, tool calling, and conversation flow with callback-based architecture
-- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using `devstral-small-2507` model
-- **McpManager** (`source/services/mcp-manager.ts`): Orchestrates multiple MCP servers, maps tools to servers, handles parallel tool execution
-- **McpClient** (`source/services/mcp-client.ts`): Individual MCP server connection management with stdio transport
+- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `devstral-small-2507`)
+- **ToolManager** (`source/services/tool-manager.ts`): Manages built-in tools, handles tool registration and execution
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 
 #### Command System
@@ -59,24 +59,31 @@ The codebase follows a modular architecture with clear separation of concerns:
 #### Utilities
 
 - **App Utils** (`source/utils/app-utils.ts`): Shared utility functions like git repository detection
+- **Converters** (`source/utils/converters.ts`): Bidirectional conversion between Mistral and MCP formats
+- **Git** (`source/utils/git.ts`): Git repository utilities
+- **Gitignore** (`source/utils/gitignore.ts`): Gitignore parsing and matching
+- **Paths** (`source/utils/paths.ts`): Path utilities and resolution
+- **Regex** (`source/utils/regex.ts`): Regular expression utilities
+- **Validation** (`source/utils/validation.ts`): Input validation utilities
 
-### MCP Tool Integration
+### Built-in Tool System
 
-The app runs a built-in **ToolServer** (`source/tools/tool-server.ts`) that provides filesystem operations:
+The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that provides filesystem operation and search tools:
 
 - **edit**: String replacement in files
+- **glob**: File search by glob pattern
+- **grep**: Content search by regex pattern
+- **ls**: Directory listing with glob ignore patterns
 - **multi-edit**: Multiple edits in sequence
 - **read**: File content reading with offset/limit
 - **write**: File creation/overwriting
-- **ls**: Directory listing with glob ignore patterns
 
-Tool handlers are in `source/tools/handlers/` and use MCP protocol for communication.
+Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`).
 
 ### Type System & Converters
 
 - **Mistral Types** (`source/types/mistral.ts`): Mistral API message and tool types
-- **MCP Types** (`source/types/mcp.ts`): MCP protocol types for servers and tools
-- **Converters** (`source/utils/converters.ts`): Bidirectional conversion between Mistral and MCP formats
+- **MCP Types** (`source/types/mcp.ts`): MCP protocol types for tool definitions
 
 ### Key Patterns
 
@@ -88,7 +95,7 @@ Tool handlers are in `source/tools/handlers/` and use MCP protocol for communica
 - **Streaming responses** from Mistral API with real-time UI updates
 - **Slash commands** (`/help`, `/usage`, `/logout`, `/exit`, `/quit`) for session management
 - **Conversation history** maintained as `MistralMessage[]` array with system prompt injection
-- **Graceful shutdown** handling for MCP server connections via signal handlers
+- **Graceful shutdown** handling via signal handlers
 - **Tool execution results** fed back into conversation for AI followup
 - **Prefer types over interfaces** for type definitions
 - **Boolean prop naming**: Use `isLoading` instead of `loading` for clarity

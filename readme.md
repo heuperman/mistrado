@@ -1,13 +1,13 @@
 # Mistrado
 
-A terminal-based conversational interface for Mistral AI, built with Ink and React. Features an extensible architecture with MCP (Model Context Protocol) integration for filesystem tools and real-time streaming responses.
+A terminal-based conversational interface for Mistral AI, built with Ink and React. Features built-in filesystem and search tools with real-time streaming responses.
 
 ## Features
 
 - **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
-- **Streaming AI Responses**: Real-time streaming from Mistral AI's `devstral-small-2507` model
+- **Streaming AI Responses**: Real-time streaming from Mistral AI with configurable model selection
 - **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management
-- **MCP Tool Integration**: Built-in filesystem tools (read, write, edit, ls, multi-edit) via Model Context Protocol
+- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit) and search capabilities (glob, grep)
 - **Modular Architecture**: Clean separation of concerns with React hooks and service layers
 - **Session Management**: Persistent conversation history
 
@@ -27,7 +27,7 @@ npm run build
 npm run test
 ```
 
-## Install
+## Installation
 
 ```bash
 npm install --global mistrado
@@ -35,13 +35,24 @@ npm install --global mistrado
 
 ## Usage
 
-Simply run the CLI to start a conversation:
+Start a conversation with Mistral AI:
 
 ```bash
 mistrado
 ```
 
-On first run, you'll be prompted to enter your Mistral API key, which will be securely stored in your system keychain.
+### First Time Setup
+
+On first run, you'll be prompted to enter your Mistral API key. The key is securely stored in your system keychain for future sessions.
+
+### Model Configuration
+
+By default, Mistrado uses the `devstral-small-2507` model. You can configure a different model by creating a settings file:
+
+```bash
+mkdir -p .mistrado
+echo '{"model": "your-preferred-model"}' > .mistrado/settings.json
+```
 
 ## Commands
 
@@ -52,10 +63,26 @@ On first run, you'll be prompted to enter your Mistral API key, which will be se
 
 ### Built-in Tools
 
-The application includes a built-in MCP tool server providing:
+The application includes built-in tools for filesystem operations and content search:
 
+**Filesystem Operations:**
 - `read`: File content reading with offset/limit support
-- `write`: File creation and overwriting
+- `write`: File creation and overwriting  
 - `edit`: String replacement in files
-- `multi-edit`: Multiple sequential edits
+- `multi-edit`: Multiple sequential edits in a single operation
 - `ls`: Directory listing with glob ignore patterns
+
+**Search Tools:**
+- `glob`: Find files by pattern matching (e.g., `*.js`, `**/*.ts`)
+- `grep`: Search file contents using regular expressions
+
+These tools enable the AI to help with code analysis, file management, and project exploration.
+
+## Requirements
+
+- Node.js 16 or higher
+- Mistral API key ([get one here](https://console.mistral.ai/))
+
+## License
+
+MIT
