@@ -4,6 +4,7 @@ import TextInput from 'ink-text-input';
 import Login from './components/login.js';
 import Hero from './components/hero.js';
 import Conversation from './components/conversation.js';
+import {Settings} from './components/settings.js';
 import {useAppState} from './hooks/use-app-state.js';
 import {useSignalHandler} from './hooks/use-signal-handler.js';
 import {CommandHandler} from './commands/command-handler.js';
@@ -25,6 +26,7 @@ export default function App() {
 		sessionUsage,
 		shouldExit,
 		currentTokenCount,
+		showSettings,
 		setApiKey,
 		setPrompt,
 		setIsLoading,
@@ -37,6 +39,8 @@ export default function App() {
 		updateUsage,
 		updateTokenCount,
 		resetTokenCount,
+		openSettings,
+		closeSettings,
 	} = useAppState();
 
 	useSignalHandler(mcpManager, shouldExit);
@@ -67,9 +71,12 @@ export default function App() {
 
 			await commandHandler.handleCommand(
 				commandHandler.extractCommand(trimmedPrompt),
-				addToHistoryCommand,
-				logAndExit,
-				sessionUsage,
+				{
+					addToHistory: addToHistoryCommand,
+					logAndExit,
+					usage: sessionUsage,
+					openSettings,
+				},
 			);
 			setIsLoading(false);
 		} else {
@@ -120,6 +127,20 @@ export default function App() {
 	};
 
 	if (!apiKey) return <Login setApiKey={setApiKey} />;
+
+	if (showSettings) {
+		return (
+			<Box width="100%" flexDirection="column" gap={1}>
+				<Hero />
+				<Settings
+					onComplete={(message: string) => {
+						addToHistory({type: 'command', content: message});
+						closeSettings();
+					}}
+				/>
+			</Box>
+		);
+	}
 
 	return (
 		<Box width="100%" flexDirection="column" gap={1}>

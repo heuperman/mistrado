@@ -1,7 +1,7 @@
 import type {UsageInfo} from '@mistralai/mistralai/models/components/usageinfo.js';
 import {deleteSecret} from '../services/secrets-service.js';
 
-const commands = ['exit', 'help', 'usage', 'logout'] as const;
+const commands = ['exit', 'help', 'usage', 'logout', 'settings'] as const;
 const commandAliases: Partial<Record<string, Command>> = {
 	quit: 'exit',
 } as const;
@@ -10,6 +10,7 @@ const commandDescriptions: Record<Command, string> = {
 	help: 'Show available commands',
 	usage: 'Show token usage statistics',
 	logout: 'Logout and clear API key',
+	settings: 'Configure application settings',
 } as const;
 
 export type Command = (typeof commands)[number];
@@ -37,10 +38,12 @@ const commandRegister: Record<
 		addToHistory,
 		logAndExit,
 		usage,
+		openSettings,
 	}: {
 		addToHistory: (content: string) => void;
 		logAndExit: (message: string) => void;
 		usage: Record<string, UsageInfo> | undefined;
+		openSettings?: () => void;
 	}) => Promise<void>
 > = {
 	async exit({logAndExit, usage}) {
@@ -59,26 +62,34 @@ const commandRegister: Record<
 			'Logged out successfully. Please restart the app to enter a new API Key.',
 		);
 	},
+	async settings({openSettings}) {
+		if (openSettings) {
+			openSettings();
+		}
+	},
 };
 
 export class CommandHandler {
 	async handleCommand(
 		commandInput: string,
-		addToHistory: (content: string) => void,
-		logAndExit: (message: string) => void,
-		usage: Record<string, UsageInfo> | undefined,
+		handlers: {
+			addToHistory: (content: string) => void;
+			logAndExit: (message: string) => void;
+			usage: Record<string, UsageInfo> | undefined;
+			openSettings?: () => void;
+		},
 	): Promise<void> {
 		const input = commandInput.trim().toLowerCase();
 		const command: Command = commandAliases[input] ?? (input as Command);
 
 		if (!command && commands.includes(command as Command)) {
-			addToHistory(
+			handlers.addToHistory(
 				`Unknown command: ${input}. Type /help for available commands.`,
 			);
 			return;
 		}
 
-		await commandRegister[command]({addToHistory, logAndExit, usage});
+		await commandRegister[command](handlers);
 	}
 
 	isCommand(input: string): boolean {

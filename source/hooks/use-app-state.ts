@@ -28,6 +28,7 @@ export function useAppState() {
 	>();
 	const [shouldExit, setShouldExit] = useState(false);
 	const [currentTokenCount, setCurrentTokenCount] = useState(0);
+	const [showSettings, setShowSettings] = useState(false);
 
 	// Initialize Mistral client
 	useEffect(() => {
@@ -147,6 +148,14 @@ export function useAppState() {
 		setCurrentTokenCount(0);
 	};
 
+	const openSettings = () => {
+		setShowSettings(true);
+	};
+
+	const closeSettings = () => {
+		setShowSettings(false);
+	};
+
 	return {
 		// State
 		mistralService,
@@ -160,6 +169,7 @@ export function useAppState() {
 		sessionUsage,
 		shouldExit,
 		currentTokenCount,
+		showSettings,
 		// Setters
 		setApiKey,
 		setPrompt,
@@ -174,5 +184,7 @@ export function useAppState() {
 		updateUsage,
 		updateTokenCount,
 		resetTokenCount,
+		openSettings,
+		closeSettings,
 	};
 }

@@ -48,7 +48,7 @@ On first run, you'll be prompted to enter your Mistral API key. The key is secur
 
 ### Model Configuration
 
-By default, Mistrado uses the `devstral-small-2507` model. You can configure a different model by creating a settings file:
+By default, Mistrado uses the `devstral-small-latest` model. You can configure a different model by creating a settings file:
 
 ```bash
 mkdir -p .mistrado

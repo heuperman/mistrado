@@ -48,7 +48,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 #### Services Layer
 
 - **ConversationService** (`source/services/conversation-service.ts`): Handles AI interactions, tool calling, and conversation flow with callback-based architecture
-- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `devstral-small-2507`)
+- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `devstral-small-latest`)
 - **ToolManager** (`source/services/tool-manager.ts`): Manages built-in tools, handles tool registration and execution
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 

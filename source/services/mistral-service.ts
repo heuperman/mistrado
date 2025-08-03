@@ -12,6 +12,7 @@ import type {
 } from '@mistralai/mistralai/models/components/index.js';
 import type {EventStream} from '@mistralai/mistralai/lib/event-streams.js';
 import {type MistralMessage} from '../types/mistral.js';
+import {defaultModel} from '../defaults.js';
 
 type Settings = {
 	model: string;
@@ -88,7 +89,7 @@ export class MistralService {
 			return settings.model;
 		} catch {
 			// Fallback to default model if settings file doesn't exist or is invalid
-			return 'devstral-small-2507';
+			return defaultModel;
 		}
 	}
 
