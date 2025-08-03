@@ -6,6 +6,7 @@ import {MistralService} from '../services/mistral-service.js';
 import {McpManager} from '../services/mcp-manager.js';
 import {getMainSystemPrompt} from '../prompts/system.js';
 import {isGitRepo} from '../utils/git.js';
+import {loadCustomInstruction} from '../utils/custom-instructions.js';
 import type {MistralMessage} from '../types/mistral.js';
 import type {ConversationEntry} from '../services/conversation-service.js';
 
@@ -81,6 +82,7 @@ export function useAppState() {
 	useEffect(() => {
 		if (sessionMessages.length === 0) {
 			const workingDirectoryPath = process.cwd();
+			const customInstruction = loadCustomInstruction(workingDirectoryPath);
 
 			setSessionMessages([
 				getMainSystemPrompt({
@@ -88,6 +90,7 @@ export function useAppState() {
 					isGitRepo: isGitRepo(workingDirectoryPath),
 					platform: process.platform,
 					todayDate: new Date(),
+					customInstruction,
 				}),
 			]);
 		}

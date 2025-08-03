@@ -108,6 +108,21 @@ The system prompt (`source/prompts/system.ts`) configures the AI as "Mistrado" w
 - Direct answers without preamble/postamble
 - File path references with `file_path:line_number` format
 - Security-focused (refuse malicious code requests)
+- Custom instructions support via AGENTS.md file
+
+### Custom Instructions (AGENTS.md)
+
+The application supports project-specific custom instructions through an `AGENTS.md` file in the working directory:
+
+- **File Location**: `AGENTS.md` in the project root directory
+- **Loading**: Automatically detected and loaded during app initialization (`source/hooks/use-app-state.ts:85`)
+- **Integration**: Content appended to system prompt under "## Custom Instructions" section
+- **Utility Function**: `loadCustomInstruction()` in `source/utils/custom-instructions.ts`
+- **Behavior**:
+  - Returns `undefined` if file doesn't exist or is empty/whitespace-only
+  - Safely handles file read errors
+  - Trims whitespace from content
+- **Use Cases**: Project-specific coding standards, architectural guidelines, testing requirements, or contextual information
 
 ### Security Notes
 

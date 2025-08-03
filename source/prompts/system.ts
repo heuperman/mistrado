@@ -5,11 +5,13 @@ export function getMainSystemPrompt({
 	isGitRepo,
 	platform,
 	todayDate,
+	customInstruction,
 }: {
 	workingDirectoryPath: string;
 	isGitRepo: boolean;
 	platform: string;
 	todayDate: Date;
+	customInstruction?: string;
 }): SystemMessage & {role: 'system'} {
 	return {
 		role: 'system',
@@ -112,6 +114,6 @@ Working directory: ${workingDirectoryPath} Is directory a git repo: ${isGitRepo 
 - Tool results may include \`<system-reminder>\` tags with useful information
 - Minimize output tokens while maintaining quality and accuracy
 - Address only the specific query - avoid tangential information
-- Display is command line interface with GitHub-flavored markdown support`,
+- Display is command line interface with GitHub-flavored markdown support${customInstruction ? `\n\n## Custom Instructions\n\n${customInstruction}` : ''}`,
 	};
 }
