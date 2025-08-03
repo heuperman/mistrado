@@ -1,7 +1,16 @@
 import type {UsageInfo} from '@mistralai/mistralai/models/components/usageinfo.js';
+import type {Dispatch, SetStateAction} from 'react';
 import {deleteSecret} from '../services/secrets-service.js';
+import type {MistralMessage} from '../types/mistral.js';
 
-const commands = ['exit', 'help', 'usage', 'logout', 'settings'] as const;
+const commands = [
+	'exit',
+	'help',
+	'usage',
+	'logout',
+	'settings',
+	'clear',
+] as const;
 const commandAliases: Partial<Record<string, Command>> = {
 	quit: 'exit',
 } as const;
@@ -11,9 +20,18 @@ const commandDescriptions: Record<Command, string> = {
 	usage: 'Show token usage statistics',
 	logout: 'Logout and clear API key',
 	settings: 'Configure application settings',
+	clear: 'Clear the current session history',
 } as const;
 
 export type Command = (typeof commands)[number];
+
+type CommandHandlers = {
+	addToHistory: (content: string) => void;
+	setSessionMessages: Dispatch<SetStateAction<MistralMessage[]>>;
+	logAndExit: (message: string) => void;
+	usage: Record<string, UsageInfo> | undefined;
+	openSettings?: () => void;
+};
 
 function formatUsage(usage: Record<string, UsageInfo> | undefined): string {
 	if (!usage) return 'No usage data available.';
@@ -34,18 +52,11 @@ function generateCommandHelp(command: Command): string {
 
 const commandRegister: Record<
 	Command,
-	({
-		addToHistory,
-		logAndExit,
-		usage,
-		openSettings,
-	}: {
-		addToHistory: (content: string) => void;
-		logAndExit: (message: string) => void;
-		usage: Record<string, UsageInfo> | undefined;
-		openSettings?: () => void;
-	}) => Promise<void>
+	(handlers: CommandHandlers) => Promise<void>
 > = {
+	async clear({setSessionMessages}) {
+		setSessionMessages([]);
+	},
 	async exit({logAndExit, usage}) {
 		logAndExit(formatUsage(usage));
 	},
@@ -72,12 +83,7 @@ const commandRegister: Record<
 export class CommandHandler {
 	async handleCommand(
 		commandInput: string,
-		handlers: {
-			addToHistory: (content: string) => void;
-			logAndExit: (message: string) => void;
-			usage: Record<string, UsageInfo> | undefined;
-			openSettings?: () => void;
-		},
+		handlers: CommandHandlers,
 	): Promise<void> {
 		const input = commandInput.trim().toLowerCase();
 		const command: Command = commandAliases[input] ?? (input as Command);

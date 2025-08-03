@@ -73,6 +73,7 @@ export default function App() {
 				commandHandler.extractCommand(trimmedPrompt),
 				{
 					addToHistory: addToHistoryCommand,
+					setSessionMessages,
 					logAndExit,
 					usage: sessionUsage,
 					openSettings,
