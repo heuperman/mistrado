@@ -12,6 +12,7 @@ import {readTool, handleReadTool} from '../tools/read.js';
 import {multiEditTool, handleMultiEditTool} from '../tools/multi-edit.js';
 import {globTool, handleGlobTool} from '../tools/glob.js';
 import {grepTool, handleGrepTool} from '../tools/grep.js';
+import {webFetchTool, handleWebFetchTool} from '../tools/web-fetch.js';
 
 export class ToolManager {
 	private readonly tools = new Map<string, MistralTool>();
@@ -28,6 +29,7 @@ export class ToolManager {
 		this.registerTool(multiEditTool, handleMultiEditTool);
 		this.registerTool(globTool, handleGlobTool);
 		this.registerTool(grepTool, handleGrepTool);
+		this.registerTool(webFetchTool, handleWebFetchTool);
 	}
 
 	getAvailableTools(): MistralTool[] {

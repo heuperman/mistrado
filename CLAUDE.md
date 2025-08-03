@@ -68,7 +68,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 
 ### Built-in Tool System
 
-The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that provides filesystem operation and search tools:
+The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that provides filesystem operation, search, and web tools:
 
 - **edit**: String replacement in files
 - **glob**: File search by glob pattern
@@ -76,9 +76,10 @@ The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that 
 - **ls**: Directory listing with glob ignore patterns
 - **multi-edit**: Multiple edits in sequence
 - **read**: File content reading with offset/limit
+- **webfetch**: HTTP GET requests to fetch web content
 - **write**: File creation/overwriting
 
-Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`).
+Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`, `web-fetch.ts`).
 
 ### Type System & Converters
 

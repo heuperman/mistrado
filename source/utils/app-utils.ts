@@ -28,9 +28,10 @@ export function formatToolCallDisplay(
 			write: 'filePath',
 			edit: 'filePath',
 			list: 'path',
-			'multi-edit': 'filePath',
+			multiedit: 'filePath',
 			glob: 'pattern',
 			grep: 'pattern',
+			webfetch: 'url',
 		};
 
 		const pathKey = pathArgumentMap[toolName.toLowerCase()];
@@ -38,13 +39,21 @@ export function formatToolCallDisplay(
 			return toolNameToDisplay;
 		}
 
-		const absolutePath = args[pathKey] as string;
-		if (typeof absolutePath !== 'string') {
+		const argumentValue = args[pathKey] as string;
+		if (typeof argumentValue !== 'string') {
 			return toolNameToDisplay;
 		}
 
+		// Handle URLs differently from file paths
+		if (toolName.toLowerCase() === 'webfetch') {
+			// For URLs, strip the protocol and show the clean URL
+			const displayUrl = argumentValue.replace(/^https?:\/\//, '');
+			return `${toolNameToDisplay}(${displayUrl})`;
+		}
+
+		// For file paths, apply path transformations
 		const pathToDisplay = shortenPathForDisplay(
-			makePathRelative(absolutePath, process.cwd()),
+			makePathRelative(argumentValue, process.cwd()),
 		);
 		return `${toolNameToDisplay}(${pathToDisplay})`;
 	} catch {

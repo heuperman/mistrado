@@ -79,7 +79,11 @@ The application includes built-in tools for filesystem operations and content se
 - `glob`: Find files by pattern matching (e.g., `*.js`, `**/*.ts`)
 - `grep`: Search file contents using regular expressions
 
-These tools enable the AI to help with code analysis, file management, and project exploration.
+**Web Tools:**
+
+- `webfetch`: Fetch content from URLs via HTTP GET requests
+
+These tools enable the AI to help with code analysis, file management, project exploration, and web content retrieval.
 
 ### Custom Instructions
 
