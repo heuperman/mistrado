@@ -49,6 +49,10 @@ export class McpManager {
 		return this.availableTools;
 	}
 
+	getToolManager(): ToolManager {
+		return this.toolManager;
+	}
+
 	async callTool(toolCall: MistralToolCall): Promise<MistralToolMessage> {
 		const toolName = toolCall.function.name;
 

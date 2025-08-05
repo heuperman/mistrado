@@ -13,6 +13,11 @@ import {multiEditTool, handleMultiEditTool} from '../tools/multi-edit.js';
 import {globTool, handleGlobTool} from '../tools/glob.js';
 import {grepTool, handleGrepTool} from '../tools/grep.js';
 import {webFetchTool, handleWebFetchTool} from '../tools/web-fetch.js';
+import {
+	todoWriteTool,
+	handleTodoWriteTool,
+	type TodoItem,
+} from '../tools/todo-write.js';
 
 export class ToolManager {
 	private readonly tools = new Map<string, MistralTool>();
@@ -20,6 +25,8 @@ export class ToolManager {
 		string,
 		(args: unknown) => Promise<MistralToolMessage>
 	>();
+
+	private readonly todoStorage = new Map<string, TodoItem[]>();
 
 	constructor() {
 		this.registerTool(editTool, handleEditTool);
@@ -30,10 +37,15 @@ export class ToolManager {
 		this.registerTool(globTool, handleGlobTool);
 		this.registerTool(grepTool, handleGrepTool);
 		this.registerTool(webFetchTool, handleWebFetchTool);
+		this.registerTodoWriteTool();
 	}
 
 	getAvailableTools(): MistralTool[] {
 		return [...this.tools.values()];
+	}
+
+	getCurrentTodos(): TodoItem[] {
+		return this.todoStorage.get('session') ?? [];
 	}
 
 	async callTool(toolCall: MistralToolCall): Promise<MistralToolMessage> {
@@ -120,5 +132,50 @@ export class ToolManager {
 				],
 			};
 		};
+	}
+
+	private registerTodoWriteTool(): void {
+		// Convert MCP tool format to Mistral format
+		const mistralTool: MistralTool = {
+			type: 'function',
+			function: {
+				name: todoWriteTool.name,
+				description: todoWriteTool.description,
+				parameters: todoWriteTool.inputSchema,
+			},
+		};
+
+		const name = todoWriteTool.name.toLowerCase();
+
+		this.tools.set(name, mistralTool);
+		this.handlers.set(
+			name,
+			async (args: unknown): Promise<MistralToolMessage> => {
+				const result = await handleTodoWriteTool(args, this.todoStorage);
+
+				// Convert MCP result format to Mistral format
+				if ('content' in result && result.content) {
+					return {
+						role: 'tool',
+						content: result.content.map(item => ({
+							type: 'text',
+							text: item.type === 'text' ? item.text : JSON.stringify(item),
+						})),
+					};
+				}
+
+				// Fallback for any other format
+				return {
+					role: 'tool',
+					content: [
+						{
+							type: 'text',
+							text:
+								typeof result === 'string' ? result : JSON.stringify(result),
+						},
+					],
+				};
+			},
+		);
 	}
 }

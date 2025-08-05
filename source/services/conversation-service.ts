@@ -271,6 +271,7 @@ export class ConversationService {
 							content: formatToolCallDisplay(
 								toolCall.function.name,
 								toolCall.function.arguments,
+								mcpManager.getToolManager(),
 							),
 							status: 'running',
 							toolCallId: toolCall.id,
