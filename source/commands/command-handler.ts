@@ -88,7 +88,7 @@ export class CommandHandler {
 		const input = commandInput.trim().toLowerCase();
 		const command: Command = commandAliases[input] ?? (input as Command);
 
-		if (!command && commands.includes(command as Command)) {
+		if (!commands.includes(command)) {
 			handlers.addToHistory(
 				`Unknown command: ${input}. Type /help for available commands.`,
 			);

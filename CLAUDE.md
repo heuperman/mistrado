@@ -91,6 +91,7 @@ The application includes a comprehensive todo management system to help track pr
 **Purpose**: Enables the AI to create and manage structured task lists, providing users with visibility into complex multi-step work and helping maintain focus on current objectives.
 
 **Key Features**:
+
 - **Task States**: `pending`, `in_progress`, `completed`
 - **Priority Levels**: `high`, `medium`, `low`
 - **Business Rules**: Only one task can be `in_progress` at a time
@@ -98,6 +99,7 @@ The application includes a comprehensive todo management system to help track pr
 - **Visual Feedback**: Real-time display of task progress in the terminal
 
 **Usage Pattern**:
+
 - AI proactively creates todos for complex tasks (3+ steps)
 - Updates task status as work progresses
 - Marks tasks complete immediately upon finishing
@@ -119,6 +121,7 @@ Current todos:
 ```
 
 **Implementation**:
+
 - **Where**: `injectTodoContext()` method in ConversationService
 - **When**: Before every API call to Mistral
 - **Format**: `<system-reminder>` tags wrap todo context
@@ -127,11 +130,13 @@ Current todos:
 #### Todo Display (`source/utils/app-utils.ts`)
 
 **Visual Formatting**:
+
 - `☐ Task content` - Pending tasks
 - `☐ **Task content** (in progress)` - Active tasks
 - `☑ ~Task content~` - Completed tasks (strikethrough)
 
 **Tool Call Display**: When TodoWrite is invoked, shows current todos being updated:
+
 ```
 **TodoWrite**
 ☐ Research existing patterns
@@ -143,7 +148,7 @@ Current todos:
 
 - **Continuous Awareness**: AI always knows current task state
 - **Progress Tracking**: Visual indicators of work completion
-- **Focus Management**: Prevents context loss during complex tasks  
+- **Focus Management**: Prevents context loss during complex tasks
 - **User Transparency**: Clear visibility into AI's task planning and execution
 
 ### Type System & Converters
