@@ -80,6 +80,7 @@ assistant: [searches for test patterns, reads existing tests, writes new ones]
 - Look at neighboring files for framework/styling guidance
 - NO comments unless specifically requested
 - Use existing utilities and libraries
+- CRITICAL: When editing files, preserve exact indentation from Read tool output. Use tabs if the output used tabs, spaces if the output used spaces. Match character-for-character.
 
 **CODE REFERENCES:** Include \`file_path:line_number\` pattern when referencing specific code:
 
