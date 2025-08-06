@@ -1,6 +1,6 @@
 import process from 'node:process';
+import type {TodoItem} from '../tools/todo-write.js';
 import {makePathRelative, shortenPathForDisplay} from './paths.js';
-import {TodoItem} from '../tools/todo-write.js';
 
 /**
  * Formats a tool call with its primary argument for display in the conversation
@@ -29,24 +29,7 @@ export function formatToolCallDisplay(
 				Array.isArray(args['todos'])
 			) {
 				const todos = args['todos'] as TodoItem[];
-
-				if (todos.length === 0) {
-					return `${toolNameToDisplay}\n*Todo list is empty*`;
-				}
-
-				const todoList = todos
-					.map(todo => {
-						if (todo.status === 'completed') {
-							return `☑ ~${todo.content}~`;
-						}
-
-						if (todo.status === 'in_progress') {
-							return `☐ **${todo.content}** (in progress)`;
-						}
-
-						return `☐ ${todo.content}`;
-					})
-					.join('\n');
+				const todoList = formatTodosForDisplay(todos);
 
 				return `${toolNameToDisplay}\n${todoList}`;
 			}
@@ -103,4 +86,42 @@ export function formatToolCallDisplay(
 	} catch {
 		return toolNameToDisplay;
 	}
+}
+
+/**
+ * Formats todos for injection as context in user messages
+ * @param todos Array of todo items
+ * @returns Formatted string for system reminder context
+ */
+export function formatTodoContext(todos: TodoItem[]): string {
+	const formattedTodos = formatTodosForDisplay(todos);
+
+	return todos.length === 0
+		? `<system-reminder>\n${formattedTodos}\n</system-reminder>`
+		: `<system-reminder>\nCurrent todos:\n${formattedTodos}\n</system-reminder>`;
+}
+
+/**
+ * Formats todos for display in the conversation
+ * @param todos Array of todo items
+ * @returns Formatted string for displaying todos
+ */
+export function formatTodosForDisplay(todos: TodoItem[]): string {
+	if (todos.length === 0) {
+		return 'Todo list is empty.';
+	}
+
+	return todos
+		.map(todo => {
+			if (todo.status === 'completed') {
+				return `☑ ~${todo.content}~`;
+			}
+
+			if (todo.status === 'in_progress') {
+				return `☐ **${todo.content}** (in progress)`;
+			}
+
+			return `☐ ${todo.content}`;
+		})
+		.join('\n');
 }

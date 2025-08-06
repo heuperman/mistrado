@@ -7,7 +7,7 @@ A terminal-based conversational interface for Mistral AI, built with Ink and Rea
 - **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
 - **Streaming AI Responses**: Real-time streaming from Mistral AI with configurable model selection
 - **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management
-- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit) and search capabilities (glob, grep)
+- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management
 - **Modular Architecture**: Clean separation of concerns with React hooks and service layers
 - **Session Management**: Persistent conversation history
 - **Custom Instructions**: Optional AGENTS.md file support for project-specific AI behavior
@@ -83,7 +83,11 @@ The application includes built-in tools for filesystem operations and content se
 
 - `webfetch`: Fetch content from URLs via HTTP GET requests
 
-These tools enable the AI to help with code analysis, file management, project exploration, and web content retrieval.
+**Task Management:**
+
+- `todo-write`: Create and manage structured task lists with progress tracking
+
+These tools enable the AI to help with code analysis, file management, project exploration, web content retrieval, and task organization.
 
 ### Custom Instructions
 

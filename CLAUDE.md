@@ -68,7 +68,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 
 ### Built-in Tool System
 
-The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that provides filesystem operation, search, and web tools:
+The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that provides filesystem operation, search, task management, and web tools:
 
 - **edit**: String replacement in files
 - **glob**: File search by glob pattern
@@ -76,10 +76,75 @@ The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that 
 - **ls**: Directory listing with glob ignore patterns
 - **multi-edit**: Multiple edits in sequence
 - **read**: File content reading with offset/limit
+- **todo-write**: Task management and progress tracking
 - **webfetch**: HTTP GET requests to fetch web content
 - **write**: File creation/overwriting
 
-Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`, `web-fetch.ts`).
+Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`, `web-fetch.ts`, `todo-write.ts`).
+
+### Todo Management System
+
+The application includes a comprehensive todo management system to help track progress during coding sessions:
+
+#### TodoWrite Tool (`source/tools/todo-write.ts`)
+
+**Purpose**: Enables the AI to create and manage structured task lists, providing users with visibility into complex multi-step work and helping maintain focus on current objectives.
+
+**Key Features**:
+- **Task States**: `pending`, `in_progress`, `completed`
+- **Priority Levels**: `high`, `medium`, `low`
+- **Business Rules**: Only one task can be `in_progress` at a time
+- **Session Persistence**: Todos are maintained per session in memory
+- **Visual Feedback**: Real-time display of task progress in the terminal
+
+**Usage Pattern**:
+- AI proactively creates todos for complex tasks (3+ steps)
+- Updates task status as work progresses
+- Marks tasks complete immediately upon finishing
+- Provides progress summaries (e.g., "3/5 tasks completed")
+
+#### Todo Context Injection (`source/services/conversation-service.ts`)
+
+**Automatic Context**: Every user message automatically includes current todo state as context for the AI:
+
+```
+User: "Help me fix the authentication bug"
+
+<system-reminder>
+Current todos:
+☐ Set up authentication endpoints
+☐ **Implement login form validation** (in progress)
+☑ ~Create user database schema~
+</system-reminder>
+```
+
+**Implementation**:
+- **Where**: `injectTodoContext()` method in ConversationService
+- **When**: Before every API call to Mistral
+- **Format**: `<system-reminder>` tags wrap todo context
+- **Logic**: Only injects if the latest message is from the user (prevents duplication during tool calls)
+
+#### Todo Display (`source/utils/app-utils.ts`)
+
+**Visual Formatting**:
+- `☐ Task content` - Pending tasks
+- `☐ **Task content** (in progress)` - Active tasks
+- `☑ ~Task content~` - Completed tasks (strikethrough)
+
+**Tool Call Display**: When TodoWrite is invoked, shows current todos being updated:
+```
+**TodoWrite**
+☐ Research existing patterns
+☐ **Implement new feature** (in progress)
+☑ ~Set up project structure~
+```
+
+#### Benefits
+
+- **Continuous Awareness**: AI always knows current task state
+- **Progress Tracking**: Visual indicators of work completion
+- **Focus Management**: Prevents context loss during complex tasks  
+- **User Transparency**: Clear visibility into AI's task planning and execution
 
 ### Type System & Converters
 

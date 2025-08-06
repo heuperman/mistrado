@@ -8,7 +8,7 @@ import type {
 	MistralTool,
 	MistralToolCall,
 } from '../types/mistral.js';
-import {formatToolCallDisplay} from '../utils/app-utils.js';
+import {formatToolCallDisplay, formatTodoContext} from '../utils/app-utils.js';
 import type {MistralService} from './mistral-service.js';
 import type {McpManager} from './mcp-manager.js';
 
@@ -46,8 +46,19 @@ export class ConversationService {
 	): Promise<void> {
 		try {
 			const {service, messages, tools, mcpManager} = parameters;
+
+			// Inject todo context into the last user message
+			const messagesWithTodoContext = this.injectTodoContext(
+				messages,
+				mcpManager,
+			);
+
 			const {error, assistantMessages, usage, model} =
-				await service.getResponse(messages, tools, callbacks.onTokenProgress);
+				await service.getResponse(
+					messagesWithTodoContext,
+					tools,
+					callbacks.onTokenProgress,
+				);
 
 			if (error) {
 				callbacks.onError(error);
@@ -344,5 +355,57 @@ export class ConversationService {
 			callbacks.onError(`Error handling tool calls: ${errorMessage}`);
 			callbacks.onLoadingChange(false);
 		}
+	}
+
+	private injectTodoContext(
+		messages: MistralMessage[],
+		mcpManager: McpManager | undefined,
+	): MistralMessage[] {
+		if (!mcpManager) {
+			return messages;
+		}
+
+		const todos = mcpManager.getToolManager().getCurrentTodos();
+		const todoContext = formatTodoContext(todos);
+
+		const modifiedMessages = [...messages];
+		const latestMessage = modifiedMessages.at(-1);
+
+		// Only modify the last user message to include todo context and only do so once
+		if (latestMessage?.role === 'user') {
+			if (typeof latestMessage.content === 'string') {
+				const updatedMessage: MistralMessage = {
+					...latestMessage,
+					content: [
+						{
+							type: 'text' as const,
+							text: latestMessage.content,
+						},
+						{
+							type: 'text' as const,
+							text: todoContext,
+						},
+					],
+				};
+				modifiedMessages[modifiedMessages.length - 1] = updatedMessage;
+			} else if (
+				Array.isArray(latestMessage.content) &&
+				latestMessage.content
+			) {
+				const updatedMessage: MistralMessage = {
+					...latestMessage,
+					content: [
+						...latestMessage.content,
+						{
+							type: 'text' as const,
+							text: todoContext,
+						},
+					],
+				};
+				modifiedMessages[modifiedMessages.length - 1] = updatedMessage;
+			}
+		}
+
+		return modifiedMessages;
 	}
 }
