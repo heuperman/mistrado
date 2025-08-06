@@ -1,39 +1,60 @@
 import process from 'node:process';
-import type {ToolManager} from '../services/tool-manager.js';
 import {makePathRelative, shortenPathForDisplay} from './paths.js';
+import {TodoItem} from '../tools/todo-write.js';
 
 /**
  * Formats a tool call with its primary argument for display in the conversation
  * @param toolName The name of the tool being called
  * @param toolArguments The arguments passed to the tool (can be string or object)
- * @param toolManager Optional ToolManager instance for accessing tool context
  * @returns Formatted string like "**ToolName** relative/path/to/file"
  */
 export function formatToolCallDisplay(
 	toolName: string,
 	toolArguments: Record<string, unknown> | string,
-	toolManager?: ToolManager,
 ): string {
 	const toolNameToDisplay = `**${toolName}**`;
 
 	// Special handling for TodoWrite tool
-	if (toolName.toLowerCase() === 'todowrite' && toolManager) {
-		const todos = toolManager.getCurrentTodos();
-		if (todos.length === 0) {
-			return `${toolNameToDisplay}\n*Todo list is empty*`;
-		}
+	if (toolName.toLowerCase() === 'todowrite') {
+		try {
+			const args =
+				typeof toolArguments === 'string'
+					? (JSON.parse(toolArguments) as Record<string, unknown>)
+					: toolArguments;
 
-		const todoList = todos
-			.map(todo => {
-				if (todo.status === 'completed') {
-					return `☑ ~${todo.content}~`;
+			if (
+				args &&
+				typeof args === 'object' &&
+				'todos' in args &&
+				Array.isArray(args['todos'])
+			) {
+				const todos = args['todos'] as TodoItem[];
+
+				if (todos.length === 0) {
+					return `${toolNameToDisplay}\n*Todo list is empty*`;
 				}
 
-				return `☐ ${todo.content}`;
-			})
-			.join('\n');
+				const todoList = todos
+					.map(todo => {
+						if (todo.status === 'completed') {
+							return `☑ ~${todo.content}~`;
+						}
 
-		return `${toolNameToDisplay}\n${todoList}`;
+						if (todo.status === 'in_progress') {
+							return `☐ **${todo.content}** (in progress)`;
+						}
+
+						return `☐ ${todo.content}`;
+					})
+					.join('\n');
+
+				return `${toolNameToDisplay}\n${todoList}`;
+			}
+		} catch {
+			// Fallback to basic display if parsing fails
+		}
+
+		return toolNameToDisplay;
 	}
 
 	try {
