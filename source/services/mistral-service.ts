@@ -60,16 +60,23 @@ export class MistralService {
 			);
 		}
 
-		return this.attemptRequest(messages, tools, model, onTokenProgress, 1);
+		return this.attemptRequest({
+			messages,
+			tools,
+			model,
+			onTokenProgress,
+			attempt: 1,
+		});
 	}
 
-	private async attemptRequest(
-		messages: MistralMessage[],
-		tools: Tool[],
-		model: string,
-		onTokenProgress: TokenProgressCallback | undefined,
-		attempt: number,
-	): Promise<ResponseResult> {
+	private async attemptRequest(options: {
+		messages: MistralMessage[];
+		tools: Tool[];
+		model: string;
+		onTokenProgress: TokenProgressCallback | undefined;
+		attempt: number;
+	}): Promise<ResponseResult> {
+		const {messages, tools, model, onTokenProgress, attempt} = options;
 		const maxRetries = 3;
 
 		try {
@@ -89,13 +96,13 @@ export class MistralService {
 				await new Promise(resolve => {
 					setTimeout(resolve, attempt * 1000);
 				});
-				return this.attemptRequest(
+				return this.attemptRequest({
 					messages,
 					tools,
 					model,
 					onTokenProgress,
-					attempt + 1,
-				);
+					attempt: attempt + 1,
+				});
 			}
 
 			return {

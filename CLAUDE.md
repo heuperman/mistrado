@@ -95,7 +95,7 @@ AI models sometimes provide code snippets with incorrect indentation (e.g., usin
 **Automatic Detection & Conversion**: The system automatically:
 
 1. **Detects** the target file's indentation method (tabs, 2-space, 4-space, 8-space)
-2. **Analyzes** the AI-provided strings for their indentation patterns  
+2. **Analyzes** the AI-provided strings for their indentation patterns
 3. **Converts** mismatched indentation to match the target file's format
 4. **Reports** when normalization occurs for transparency
 

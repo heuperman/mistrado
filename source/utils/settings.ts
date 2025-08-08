@@ -7,12 +7,14 @@ export type Settings = {
 	model: string;
 };
 
-export function getCurrentModel(): string {
+export function getCurrentModel(
+	settingsDir: string = path.join(process.cwd(), '.mistrado'),
+): string {
 	try {
-		const settingsPath = path.join(process.cwd(), '.mistrado', 'settings.json');
+		const settingsPath = path.join(settingsDir, 'settings.json');
 		const settingsContent = fs.readFileSync(settingsPath, 'utf8');
 		const settings = JSON.parse(settingsContent) as Settings;
-		return settings.model;
+		return settings.model ?? defaultModel;
 	} catch {
 		return defaultModel;
 	}
@@ -20,8 +22,8 @@ export function getCurrentModel(): string {
 
 export async function updateSettings(
 	newSettings: Partial<Settings>,
+	settingsDir: string = path.join(process.cwd(), '.mistrado'),
 ): Promise<void> {
-	const settingsDir = path.join(process.cwd(), '.mistrado');
 	const settingsPath = path.join(settingsDir, 'settings.json');
 
 	let currentSettings: Settings = {model: defaultModel};
