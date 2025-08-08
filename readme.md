@@ -8,6 +8,7 @@ A terminal-based conversational interface for Mistral AI, built with Ink and Rea
 - **Streaming AI Responses**: Real-time streaming from Mistral AI with configurable model selection
 - **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management
 - **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management
+- **Smart Indentation Handling**: Automatic indentation normalization to address AI model limitations with whitespace consistency
 - **Modular Architecture**: Clean separation of concerns with React hooks and service layers
 - **Session Management**: Persistent conversation history
 - **Custom Instructions**: Optional AGENTS.md file support for project-specific AI behavior
@@ -88,6 +89,16 @@ The application includes built-in tools for filesystem operations and content se
 - `todo-write`: Create and manage structured task lists with progress tracking
 
 These tools enable the AI to help with code analysis, file management, project exploration, web content retrieval, and task organization.
+
+#### Indentation Normalization
+
+Mistrado includes intelligent indentation normalization to handle a common limitation where Mistral AI models provide code snippets with incorrect indentation (e.g., using spaces when files use tabs). The system automatically:
+
+- **Detects** your file's indentation style (tabs vs spaces, and space size)
+- **Normalizes** AI-provided code to match your file's format before applying edits
+- **Reports** when normalization occurs for transparency
+
+This feature significantly reduces edit failures due to indentation mismatches and works automatically in the background with the `edit` and `multi-edit` tools.
 
 ### Custom Instructions
 

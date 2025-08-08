@@ -82,6 +82,35 @@ The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that 
 
 Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`, `web-fetch.ts`, `todo-write.ts`).
 
+### Indentation Normalization System
+
+The application includes an intelligent indentation normalization system to address current AI model limitations with indentation consistency.
+
+#### Background & Problem
+
+AI models sometimes provide code snippets with incorrect indentation (e.g., using spaces when the target file uses tabs, or using 2 spaces when the file uses 4 spaces). This causes edit operations to fail because the provided `oldString` doesn't match the file's actual content due to indentation mismatches.
+
+#### Solution (`source/utils/indentation-normalizer.ts`)
+
+**Automatic Detection & Conversion**: The system automatically:
+
+1. **Detects** the target file's indentation method (tabs, 2-space, 4-space, 8-space)
+2. **Analyzes** the AI-provided strings for their indentation patterns  
+3. **Converts** mismatched indentation to match the target file's format
+4. **Reports** when normalization occurs for transparency
+
+**Key Features**:
+
+- **Smart Detection**: Analyzes file content to determine predominant indentation style
+- **Flexible Conversion**: Handles tabs ↔ spaces and different space sizes (2, 4, 8)
+- **Edge Case Handling**: Manages mixed indentation, empty files, and irregular patterns
+- **Non-Intrusive**: Only normalizes when mismatches are detected
+- **Transparent Reporting**: Shows normalization details in tool output
+
+**Integration**: Automatically enabled in `edit` and `multi-edit` tools without user configuration.
+
+**Removal Path**: The logic is cleanly separated in its own utility module, making it easy to remove when AI model capabilities improve and this workaround is no longer needed.
+
 ### Todo Management System
 
 The application includes a comprehensive todo management system to help track progress during coding sessions:

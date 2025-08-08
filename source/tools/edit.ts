@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../utils/validation.js';
+import {normalizeIndentation} from '../utils/indentation-normalizer.js';
 
 export const editTool: Tool = {
 	name: 'Edit',
@@ -117,35 +118,43 @@ async function editFile(
 		// Read file content
 		const content = await fs.readFile(absolutePath, 'utf8');
 
+		// Normalize indentation to match the target file
+		const normalizationResult = normalizeIndentation(
+			oldString,
+			newString,
+			content,
+		);
+		const {normalizedOldString, normalizedNewString} = normalizationResult;
+
 		let newContent: string;
 		let replacementCount = 0;
 
 		if (replaceAll) {
 			// Replace all occurrences
-			const regex = new RegExp(escapeRegExp(oldString), 'g');
+			const regex = new RegExp(escapeRegExp(normalizedOldString), 'g');
 			const matches = content.match(regex);
 			replacementCount = matches ? matches.length : 0;
 
 			if (replacementCount === 0) {
-				throw new Error(`String not found in file: "${oldString}"`);
+				throw new Error(`String not found in file: "${normalizedOldString}"`);
 			}
 
-			newContent = content.replace(regex, newString);
+			newContent = content.replace(regex, normalizedNewString);
 		} else {
 			// Replace single occurrence - must be unique
-			const firstIndex = content.indexOf(oldString);
+			const firstIndex = content.indexOf(normalizedOldString);
 			if (firstIndex === -1) {
-				throw new Error(`String not found in file: "${oldString}"`);
+				throw new Error(`String not found in file: "${normalizedOldString}"`);
 			}
 
-			const lastIndex = content.lastIndexOf(oldString);
+			const lastIndex = content.lastIndexOf(normalizedOldString);
 			if (firstIndex !== lastIndex) {
 				throw new Error(
-					`String "${oldString}" appears multiple times in the file. Use replace_all=true or provide a more specific string with surrounding context to make it unique.`,
+					`String "${normalizedOldString}" appears multiple times in the file. Use replace_all=true or provide a more specific string with surrounding context to make it unique.`,
 				);
 			}
 
-			newContent = content.replace(oldString, newString);
+			newContent = content.replace(normalizedOldString, normalizedNewString);
 			replacementCount = 1;
 		}
 
@@ -153,7 +162,14 @@ async function editFile(
 		await fs.writeFile(absolutePath, newContent, 'utf8');
 
 		const action = replaceAll ? 'replacements' : 'replacement';
-		return `Successfully made ${replacementCount} ${action} in ${absolutePath}`;
+		let result = `Successfully made ${replacementCount} ${action} in ${absolutePath}`;
+
+		// Add normalization details if normalization occurred
+		if (normalizationResult.wasNormalized && normalizationResult.details) {
+			result += `\n(Indentation normalized: ${normalizationResult.details})`;
+		}
+
+		return result;
 	} catch (error) {
 		if (error instanceof Error) {
 			throw error;
