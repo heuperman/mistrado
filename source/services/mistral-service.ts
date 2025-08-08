@@ -60,8 +60,20 @@ export class MistralService {
 			);
 		}
 
+		return this.attemptRequest(messages, tools, model, onTokenProgress, 1);
+	}
+
+	private async attemptRequest(
+		messages: MistralMessage[],
+		tools: Tool[],
+		model: string,
+		onTokenProgress: TokenProgressCallback | undefined,
+		attempt: number,
+	): Promise<ResponseResult> {
+		const maxRetries = 3;
+
 		try {
-			const stream = await this.client.chat.stream({
+			const stream = await this.client!.chat.stream({
 				model,
 				messages,
 				tools,
@@ -69,8 +81,25 @@ export class MistralService {
 
 			return await this.processStream(stream, model, onTokenProgress);
 		} catch (error) {
+			const lastError =
+				error instanceof Error ? error : new Error(String(error));
+
+			if (attempt < maxRetries) {
+				// Wait progressively longer between retries: 1s, 2s
+				await new Promise(resolve => {
+					setTimeout(resolve, attempt * 1000);
+				});
+				return this.attemptRequest(
+					messages,
+					tools,
+					model,
+					onTokenProgress,
+					attempt + 1,
+				);
+			}
+
 			return {
-				error: `API request failed: ${error instanceof Error ? error.message : String(error)}`,
+				error: `API request failed after ${maxRetries} attempts: ${lastError.message}`,
 				assistantMessages: [],
 				model,
 			};
