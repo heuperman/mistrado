@@ -14,7 +14,7 @@ import {findGitRoot} from '../utils/git.js';
 export const globTool: Tool = {
 	name: 'Glob',
 	description:
-		'Fast file pattern matching tool that efficiently finds files matching specific glob patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths sorted by modification time (newest first). Supports glob patterns with wildcards, directory traversal, and file extensions. Automatically excludes files listed in .gitignore unless includeIgnored is true.',
+		'Fast file pattern matching tool that efficiently finds files matching specific glob patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths sorted by modification time (newest first). Supports glob patterns with wildcards, directory traversal, and file extensions. Automatically excludes files listed in .gitignore unless includeIgnored is true. IMPORTANT: If this tool fails or returns no results, do not retry with identical arguments. Try a different approach such as: adjusting the glob pattern, trying a different basePath, using includeIgnored=true, or using the Grep tool to search file contents instead.',
 	inputSchema: {
 		type: 'object',
 		properties: {

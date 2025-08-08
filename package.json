@@ -2,10 +2,16 @@
 	"name": "mistrado",
 	"version": "0.1.0",
 	"license": "MIT",
-	"bin": "dist/cli.js",
+	"bin": {
+		"mistrado": "dist/cli.js"
+	},
 	"type": "module",
 	"engines": {
-		"node": ">=16"
+		"node": ">=18"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/heuperman/mistrado.git"
 	},
 	"scripts": {
 		"build": "tsc",

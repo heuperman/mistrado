@@ -13,7 +13,7 @@ import {findGitRoot} from '../utils/git.js';
 export const grepTool: Tool = {
 	name: 'Grep',
 	description:
-		'Content search tool that finds regular expression patterns within files across directory structures. Supports multiple search strategies (git grep, system grep, JavaScript fallback) with gitignore awareness and flexible file filtering.',
+		'Content search tool that finds regular expression patterns within files across directory structures. Supports multiple search strategies (git grep, system grep, JavaScript fallback) with gitignore awareness and flexible file filtering. IMPORTANT: If this tool fails or returns no results, do not retry with identical arguments. Try a different approach such as: adjusting the regex pattern, trying a different search path, using a different include pattern, or using the Glob tool to find files first.',
 	inputSchema: {
 		type: 'object',
 		properties: {
