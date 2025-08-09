@@ -233,6 +233,12 @@ function validateString(
 		}
 	}
 
+	if (Array.isArray(schema['enum']) && !schema['enum'].includes(value)) {
+		errors.push(
+			`${pathString}: value must be one of ${schema['enum'].map(v => JSON.stringify(v)).join(', ')}`,
+		);
+	}
+
 	return errors;
 }
 

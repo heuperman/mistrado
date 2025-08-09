@@ -5,7 +5,6 @@ export type TodoItem = {
 	id: string;
 	content: string;
 	status: 'pending' | 'in_progress' | 'completed';
-	priority: 'high' | 'medium' | 'low';
 };
 
 export const todoWriteTool: Tool = {
@@ -35,13 +34,8 @@ export const todoWriteTool: Tool = {
 							enum: ['pending', 'in_progress', 'completed'],
 							description: 'Current status of the task',
 						},
-						priority: {
-							type: 'string',
-							enum: ['high', 'medium', 'low'],
-							description: 'Priority level of the task',
-						},
 					},
-					required: ['id', 'content', 'status', 'priority'],
+					required: ['id', 'content', 'status'],
 					additionalProperties: false,
 				},
 			},
@@ -117,6 +111,7 @@ export async function handleTodoWriteTool(
 					text: statusMessage,
 				},
 			],
+			isError: false,
 		};
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);

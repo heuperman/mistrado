@@ -123,7 +123,6 @@ The application includes a comprehensive todo management system to help track pr
 **Key Features**:
 
 - **Task States**: `pending`, `in_progress`, `completed`
-- **Priority Levels**: `high`, `medium`, `low`
 - **Business Rules**: Only one task can be `in_progress` at a time
 - **Session Persistence**: Todos are maintained per session in memory
 - **Visual Feedback**: Real-time display of task progress in the terminal

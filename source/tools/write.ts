@@ -70,6 +70,7 @@ export async function handleWriteTool(args: unknown) {
 					text: `Successfully wrote file: ${validation.data.filePath}`,
 				},
 			],
+			isError: false,
 		};
 	} catch (error) {
 		const errorMessage =

@@ -251,6 +251,35 @@ test('string pattern validation passes for valid pattern', t => {
 	t.true(result.success);
 });
 
+test('validates string enum constraint', t => {
+	const schema = {
+		type: 'string',
+		enum: ['pending', 'in_progress', 'completed'],
+	};
+
+	const result = validateSchema('invalid_status', schema);
+
+	t.false(result.success);
+	if (!result.success) {
+		t.true(
+			result.error.includes(
+				'value must be one of "pending", "in_progress", "completed"',
+			),
+		);
+	}
+});
+
+test('string enum validation passes for valid enum value', t => {
+	const schema = {
+		type: 'string',
+		enum: ['pending', 'in_progress', 'completed'],
+	};
+
+	const result = validateSchema('pending', schema);
+
+	t.true(result.success);
+});
+
 // Number validation tests
 test('validates number minimum constraint', t => {
 	const schema = {
