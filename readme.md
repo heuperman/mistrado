@@ -118,7 +118,7 @@ The content of `AGENTS.md` will be automatically included in the system prompt, 
 
 ## Requirements
 
-- Node.js 16 or higher
+- Node.js 18 or higher
 - Mistral API key ([get one here](https://console.mistral.ai/))
 
 ## License

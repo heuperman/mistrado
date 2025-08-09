@@ -33,8 +33,11 @@ type CommandHandlers = {
 	openSettings?: () => void;
 };
 
-function formatUsage(usage: Record<string, UsageInfo> | undefined): string {
-	if (!usage) return 'No usage data available.';
+export function formatUsage(
+	usage: Record<string, UsageInfo> | undefined,
+): string {
+	if (!usage || Object.keys(usage).length === 0)
+		return 'No usage data available.';
 	return Object.entries(usage)
 		.map(
 			([model, data]) =>
@@ -43,11 +46,11 @@ function formatUsage(usage: Record<string, UsageInfo> | undefined): string {
 		.join('\n\n');
 }
 
-function generateCommandHelp(command: Command): string {
+export function generateCommandHelp(command: Command): string {
 	const commandAlias = Object.keys(commandAliases).find(
 		alias => commandAliases[alias] === command,
 	);
-	return `/**${command}** ${commandAlias ? `(**${commandAlias}**)` : ''} - ${commandDescriptions[command]}`;
+	return `**/${command}** ${commandAlias ? `(**/${commandAlias}**) ` : ''}- ${commandDescriptions[command]}`;
 }
 
 const commandRegister: Record<

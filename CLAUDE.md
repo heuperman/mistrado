@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build**: `npm run build` - Compiles TypeScript to `dist/` directory
 - **Development**: `npm run dev` - Runs TypeScript compiler in watch mode
 - **Test/Lint**: `npm run test` - Runs prettier, xo linter, and ava tests
+- **Fix** `npm run fix` - Runs prettier and xo with flags to fix formatting and linting errors
 
 ## Architecture Overview
 
