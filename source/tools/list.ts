@@ -185,5 +185,6 @@ function formatResults(
 				text: `${summary}\n\n${'Type'.padEnd(9)} ${'Name'.padEnd(30)} ${'Size'.padStart(10)}        ${'Modified'.padEnd(24)} Perms\n${'-'.repeat(80)}\n${content}`,
 			},
 		],
+		isError: false,
 	};
 }
