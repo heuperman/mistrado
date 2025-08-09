@@ -68,6 +68,7 @@ export async function handleReadTool(args: unknown) {
 					text: result,
 				},
 			],
+			isError: false,
 		};
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
