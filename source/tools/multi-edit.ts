@@ -180,6 +180,7 @@ export async function handleMultiEditTool(args: unknown) {
 					text: result,
 				},
 			],
+			isError: false,
 		};
 	} catch (error: any) {
 		return {
