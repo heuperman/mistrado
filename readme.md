@@ -63,6 +63,14 @@ echo '{"model": "your-preferred-model"}' > .mistrado/settings.json
 - `/usage` - Show token usage per model
 - `/logout` - Clear stored API key and logout
 
+### Interrupting Operations
+
+Press **ESC** to interrupt any running operation, including:
+- AI response generation (API calls in progress)
+- Tool execution (file operations, searches, etc.)
+
+This allows you to quickly stop long-running operations and regain control of the interface.
+
 ### Built-in Tools
 
 The application includes built-in tools for filesystem operations and content search:

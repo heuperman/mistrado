@@ -44,6 +44,9 @@ export default function App() {
 	} = useAppState();
 
 	const isInterruptedRef = React.useRef(false);
+	const abortControllerRef = React.useRef<AbortController | undefined>(
+		undefined,
+	);
 
 	useSignalHandler(mcpManager, shouldExit);
 
@@ -53,6 +56,12 @@ export default function App() {
 		}
 
 		if (key.escape && isLoading) {
+			// Abort API call if one is in progress
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
+
+			// Set interruption flag for tool call loops
 			isInterruptedRef.current = true;
 		}
 	});
@@ -62,6 +71,7 @@ export default function App() {
 		setPrompt('');
 		setErrorOutput(undefined);
 		isInterruptedRef.current = false;
+		abortControllerRef.current = undefined;
 		resetTokenCount();
 
 		const trimmedPrompt = promptInput.trim();
@@ -127,6 +137,11 @@ export default function App() {
 							}
 
 							return interrupted;
+						},
+						onAbortControllerCreate() {
+							const controller = new AbortController();
+							abortControllerRef.current = controller;
+							return controller;
 						},
 					},
 				);

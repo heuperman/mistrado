@@ -31,6 +31,7 @@ type ConversationCallbacks = {
 	onLoadingChange: (loading: boolean) => void;
 	onTokenProgress: (tokens: number) => void;
 	onInterruptionCheck: () => boolean;
+	onAbortControllerCreate: () => AbortController;
 };
 
 type HandleRequestParameters = {
@@ -45,6 +46,9 @@ export class ConversationService {
 		parameters: HandleRequestParameters,
 		callbacks: ConversationCallbacks,
 	): Promise<void> {
+		// Create AbortController for this request
+		const abortController = callbacks.onAbortControllerCreate();
+
 		try {
 			const {service, messages, tools, mcpManager} = parameters;
 
@@ -59,9 +63,16 @@ export class ConversationService {
 					messagesWithTodoContext,
 					tools,
 					callbacks.onTokenProgress,
+					abortController,
 				);
 
 			if (error) {
+				if (error.includes('Request aborted by client')) {
+					// Handle AbortError specifically (user interruption)
+					this.handleInterruption(callbacks);
+					return;
+				}
+
 				callbacks.onError(error);
 				callbacks.onLoadingChange(false);
 				return;
@@ -347,11 +358,7 @@ export class ConversationService {
 
 			// Check for interruption before continuing the conversation
 			if (callbacks.onInterruptionCheck()) {
-				this.handleInterruption(
-					toolCalls,
-					[...parameters.messages, ...newMessages],
-					callbacks,
-				);
+				this.handleInterruption(callbacks, toolCalls);
 				return;
 			}
 
@@ -421,14 +428,18 @@ export class ConversationService {
 	}
 
 	private handleInterruption(
-		_toolCalls: MistralToolCall[],
-		_currentMessages: MistralMessage[],
 		callbacks: ConversationCallbacks,
+		toolCalls?: MistralToolCall[],
 	): void {
-		// Generate synthetic tool result messages for API message flow
-		// Note: We only generate synthetic messages for potential future tool calls
-		// that haven't been executed yet, not for the ones that completed successfully
-		const interruptedToolMessages = this.generateInterruptedToolMessages([]);
+		const interruptedMessages: MistralMessage[] = [];
+
+		if (toolCalls?.length && toolCalls.length > 0) {
+			// Generate synthetic tool result messages for any interrupted tool calls
+			const interruptedToolMessages =
+				this.generateInterruptedToolMessages(toolCalls);
+
+			interruptedMessages.push(...interruptedToolMessages);
+		}
 
 		// Generate synthetic assistant acknowledgment message
 		const assistantMessage: MistralMessage = {
@@ -436,9 +447,13 @@ export class ConversationService {
 			content: 'Process interrupted by user.',
 		};
 
+		interruptedMessages.push(assistantMessage);
+
 		// Add synthetic messages to maintain proper API conversation flow
-		const newMessages = [...interruptedToolMessages, assistantMessage];
-		callbacks.onMessagesUpdate(messages => [...messages, ...newMessages]);
+		callbacks.onMessagesUpdate(messages => [
+			...messages,
+			...interruptedMessages,
+		]);
 
 		// Add visual interruption acknowledgment to conversation history
 		callbacks.onHistoryUpdate({

@@ -65,7 +65,9 @@ const commandRegister: Record<
 	},
 	async help({addToHistory}) {
 		const commandLines = commands.map(command => generateCommandHelp(command));
-		addToHistory(`**Available commands**: \n${commandLines.join('\n')}`);
+		addToHistory(
+			`Press **ESC** to interrupt any running operation\n\n**Available commands**: \n${commandLines.join('\n')}`,
+		);
 	},
 	async usage({addToHistory, usage}) {
 		addToHistory(formatUsage(usage));

@@ -51,6 +51,7 @@ export class MistralService {
 		messages: MistralMessage[],
 		tools: Tool[] = [],
 		onTokenProgress?: TokenProgressCallback,
+		abortController?: AbortController,
 	): Promise<ResponseResult> {
 		const model = this.getModelFromSettings();
 
@@ -60,53 +61,43 @@ export class MistralService {
 			);
 		}
 
-		return this.attemptRequest({
-			messages,
-			tools,
-			model,
-			onTokenProgress,
-			attempt: 1,
-		});
-	}
-
-	private async attemptRequest(options: {
-		messages: MistralMessage[];
-		tools: Tool[];
-		model: string;
-		onTokenProgress: TokenProgressCallback | undefined;
-		attempt: number;
-	}): Promise<ResponseResult> {
-		const {messages, tools, model, onTokenProgress, attempt} = options;
-		const maxRetries = 3;
-
 		try {
-			const stream = await this.client!.chat.stream({
-				model,
-				messages,
-				tools,
-			});
-
-			return await this.processStream(stream, model, onTokenProgress);
-		} catch (error) {
-			const lastError =
-				error instanceof Error ? error : new Error(String(error));
-
-			if (attempt < maxRetries) {
-				// Wait progressively longer between retries: 1s, 2s
-				await new Promise(resolve => {
-					setTimeout(resolve, attempt * 1000);
-				});
-				return this.attemptRequest({
+			const stream = await this.client.chat.stream(
+				{
+					model,
 					messages,
 					tools,
-					model,
-					onTokenProgress,
-					attempt: attempt + 1,
-				});
-			}
+				},
+				{
+					timeoutMs: 60_000,
+					retries: {
+						strategy: 'backoff',
+						backoff: {
+							initialInterval: 500,
+							maxInterval: 60_000,
+							exponent: 1.5,
+							maxElapsedTime: 3_600_000,
+						},
+						retryConnectionErrors: true,
+					},
+					fetchOptions: {
+						signal: abortController?.signal,
+					},
+				},
+			);
+
+			return await this.processStream(
+				stream,
+				model,
+				onTokenProgress,
+				abortController,
+			);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 
 			return {
-				error: `API request failed after ${maxRetries} attempts: ${lastError.message}`,
+				error: errorMessage,
 				assistantMessages: [],
 				model,
 			};
@@ -133,6 +124,7 @@ export class MistralService {
 		stream: EventStream<CompletionEvent>,
 		model: string,
 		onTokenProgress?: TokenProgressCallback,
+		abortController?: AbortController,
 	): Promise<ResponseResult> {
 		let assistantMessages: AssistantMessage[] = [];
 		let usage: UsageInfo | undefined;
@@ -140,6 +132,11 @@ export class MistralService {
 		let cumulativeTokens = 0;
 
 		for await (const chunk of stream) {
+			// Check for interruption (user pressed Esc)
+			if (abortController?.signal.aborted) {
+				throw new DOMException('Request was aborted by user', 'AbortError');
+			}
+
 			if (chunk.data.choices.length > 0) {
 				const result = this.processChunkChoices(
 					chunk.data.choices,

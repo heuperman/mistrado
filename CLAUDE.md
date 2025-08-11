@@ -180,6 +180,33 @@ Current todos:
 - **Focus Management**: Prevents context loss during complex tasks
 - **User Transparency**: Clear visibility into AI's task planning and execution
 
+### Interrupt Handling System
+
+The application provides ESC key interrupt functionality that allows users to stop running operations while maintaining conversation integrity.
+
+#### Implementation (`source/services/conversation-service.ts`)
+
+**Interrupt Detection**: The system checks for interruptions at key points:
+- During API streaming responses (via AbortController)
+- Between tool call executions (`callbacks.onInterruptionCheck()`)
+
+**Synthetic Message Injection**: When an interruption occurs, the system injects synthetic messages to maintain proper API conversation flow:
+
+1. **Tool Result Messages**: For interrupted tool calls, generates synthetic tool result messages with "Interrupted by user" content and proper `toolCallId` mapping
+2. **Assistant Acknowledgment**: Adds synthetic assistant message with "Process interrupted by user." to complete the conversation turn
+3. **Dual History Updates**: 
+   - Updates API conversation history (`callbacks.onMessagesUpdate()`) with synthetic messages for proper call/response pairing
+   - Updates user-visible conversation history (`callbacks.onHistoryUpdate()`) with interruption acknowledgment
+
+**Key Methods**:
+- `handleInterruption()`: Coordinates synthetic message generation and history updates
+- `generateInterruptedToolMessages()`: Creates synthetic tool result messages for incomplete tool calls
+
+**Purpose**: This dual-message approach ensures that:
+- API conversation history maintains proper structure (every tool call has a corresponding tool result)
+- Users receive clear feedback about the interruption
+- Future API calls can continue normally without conversation state corruption
+
 ### Type System & Converters
 
 - **Mistral Types** (`source/types/mistral.ts`): Mistral API message and tool types
@@ -199,6 +226,7 @@ Current todos:
 - **Tool execution results** fed back into conversation for AI followup
 - **Prefer types over interfaces** for type definitions
 - **Boolean prop naming**: Use `isLoading` instead of `loading` for clarity
+- **ESC interrupt handling**: Users can interrupt running operations (API calls and tool execution) by pressing ESC key. The system maintains conversation integrity by injecting synthetic messages into both the API conversation history and user-visible history to properly handle incomplete operations.
 
 ### System Prompt
 
