@@ -41,7 +41,7 @@ export default function Conversation({
 					)}
 					{entry.type === 'assistant' && (
 						<Box flexDirection="row" gap={1}>
-							<Text>●</Text>
+							<Text color={getStatusColor(entry.status)}>●</Text>
 							<Markdown>{entry.content}</Markdown>
 						</Box>
 					)}

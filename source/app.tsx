@@ -43,11 +43,17 @@ export default function App() {
 		closeSettings,
 	} = useAppState();
 
+	const isInterruptedRef = React.useRef(false);
+
 	useSignalHandler(mcpManager, shouldExit);
 
 	useInput((input, key) => {
 		if (key.ctrl && input === 'c') {
 			setShouldExit(true);
+		}
+
+		if (key.escape && isLoading) {
+			isInterruptedRef.current = true;
 		}
 	});
 
@@ -55,6 +61,7 @@ export default function App() {
 		setIsLoading(true);
 		setPrompt('');
 		setErrorOutput(undefined);
+		isInterruptedRef.current = false;
 		resetTokenCount();
 
 		const trimmedPrompt = promptInput.trim();
@@ -113,6 +120,14 @@ export default function App() {
 						onMessagesUpdate: setSessionMessages,
 						onLoadingChange: setIsLoading,
 						onTokenProgress: updateTokenCount,
+						onInterruptionCheck() {
+							const interrupted = isInterruptedRef.current;
+							if (interrupted) {
+								isInterruptedRef.current = false;
+							}
+
+							return interrupted;
+						},
 					},
 				);
 			} catch (error) {

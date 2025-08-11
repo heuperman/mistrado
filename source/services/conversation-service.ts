@@ -30,6 +30,7 @@ type ConversationCallbacks = {
 	onMessagesUpdate: React.Dispatch<React.SetStateAction<MistralMessage[]>>;
 	onLoadingChange: (loading: boolean) => void;
 	onTokenProgress: (tokens: number) => void;
+	onInterruptionCheck: () => boolean;
 };
 
 type HandleRequestParameters = {
@@ -344,6 +345,16 @@ export class ConversationService {
 			const newMessages = [...updatedMessages];
 			callbacks.onMessagesUpdate(messages => [...messages, ...newMessages]);
 
+			// Check for interruption before continuing the conversation
+			if (callbacks.onInterruptionCheck()) {
+				this.handleInterruption(
+					toolCalls,
+					[...parameters.messages, ...newMessages],
+					callbacks,
+				);
+				return;
+			}
+
 			// Continue conversation with tool results
 			await this.handleRequest(
 				{...parameters, messages: [...parameters.messages, ...newMessages]},
@@ -407,5 +418,46 @@ export class ConversationService {
 		}
 
 		return modifiedMessages;
+	}
+
+	private handleInterruption(
+		_toolCalls: MistralToolCall[],
+		_currentMessages: MistralMessage[],
+		callbacks: ConversationCallbacks,
+	): void {
+		// Generate synthetic tool result messages for API message flow
+		// Note: We only generate synthetic messages for potential future tool calls
+		// that haven't been executed yet, not for the ones that completed successfully
+		const interruptedToolMessages = this.generateInterruptedToolMessages([]);
+
+		// Generate synthetic assistant acknowledgment message
+		const assistantMessage: MistralMessage = {
+			role: 'assistant',
+			content: 'Process interrupted by user.',
+		};
+
+		// Add synthetic messages to maintain proper API conversation flow
+		const newMessages = [...interruptedToolMessages, assistantMessage];
+		callbacks.onMessagesUpdate(messages => [...messages, ...newMessages]);
+
+		// Add visual interruption acknowledgment to conversation history
+		callbacks.onHistoryUpdate({
+			type: 'assistant',
+			content: 'Process interrupted by user.',
+			status: 'error',
+		});
+
+		// End loading state
+		callbacks.onLoadingChange(false);
+	}
+
+	private generateInterruptedToolMessages(
+		toolCalls: MistralToolCall[],
+	): MistralMessage[] {
+		return toolCalls.map(toolCall => ({
+			role: 'tool' as const,
+			content: 'Interrupted by user',
+			toolCallId: toolCall.id,
+		}));
 	}
 }
