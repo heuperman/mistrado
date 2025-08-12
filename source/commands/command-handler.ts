@@ -72,11 +72,12 @@ const commandRegister: Record<
 	async usage({addToHistory, usage}) {
 		addToHistory(formatUsage(usage));
 	},
-	async logout({addToHistory}) {
+	async logout({logAndExit, addToHistory, usage}) {
 		await deleteSecret('MISTRAL_API_KEY');
 		addToHistory(
 			'Logged out successfully. Please restart the app to enter a new API Key.',
 		);
+		logAndExit(formatUsage(usage));
 	},
 	async settings({openSettings}) {
 		if (openSettings) {

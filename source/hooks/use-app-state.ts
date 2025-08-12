@@ -33,21 +33,29 @@ export function useAppState() {
 	// Initialize Mistral client
 	useEffect(() => {
 		async function initializeClient() {
+			if (apiKey) {
+				try {
+					const service = new MistralService(apiKey);
+					setMistralService(service);
+				} catch (error) {
+					setErrorOutput(
+						`Error initializing Mistral client: ${
+							error instanceof Error ? error.message : String(error)
+						}`,
+					);
+				}
+			}
+		}
+
+		void initializeClient();
+	}, [apiKey]);
+
+	// Fetch API key
+	useEffect(() => {
+		async function fetchApiKey() {
 			try {
 				const secretKey = await getSecret('MISTRAL_API_KEY');
-				if (secretKey) {
-					try {
-						setApiKey(secretKey);
-						const service = new MistralService(secretKey);
-						setMistralService(service);
-					} catch (error) {
-						setErrorOutput(
-							`Error initializing Mistral client: ${
-								error instanceof Error ? error.message : String(error)
-							}`,
-						);
-					}
-				}
+				if (secretKey) setApiKey(secretKey);
 			} catch (error) {
 				setErrorOutput(
 					`Error fetching API Key: ${
@@ -57,7 +65,7 @@ export function useAppState() {
 			}
 		}
 
-		void initializeClient();
+		void fetchApiKey();
 	}, []);
 
 	// Initialize MCP Manager
