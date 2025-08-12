@@ -1,43 +1,29 @@
-# Mistrado
+# ≋ Mistrado
 
-A terminal-based conversational interface for Mistral AI, built with Ink and React. Features built-in filesystem and search tools with real-time streaming responses.
+Mistrado is a terminal-based coding assistant powered by Mistral's AI model, (heavily) inspired by Claude Code. Use Mistral's models from the terminal to write and explain code.
+
+I created this tool because I love the fast, cheap and capable models Mistral provides. I also love Claude Code for its excellent product features. This is my attempt to combine the two and encourage Mistral to create their own CLI tool by showing what is possible.
+
+> [!CAUTION]
+> Mistrado does not have manual tool call confirmation support yet. Tool calls requested by the model will be executed without notice. This tool can delete and rewrite local files. Use at your own risk.
 
 ## Features
 
-- **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
-- **Streaming AI Responses**: Real-time streaming from Mistral AI with configurable model selection
-- **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management
-- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management
-- **Smart Indentation Handling**: Automatic indentation normalization to address AI model limitations with whitespace consistency
-- **Modular Architecture**: Clean separation of concerns with React hooks and service layers
-- **Session Management**: Persistent conversation history
-- **Custom Instructions**: Optional AGENTS.md file support for project-specific AI behavior
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Development mode (watch)
-npm run dev
-
-# Build
-npm run build
-
-# Test and lint
-npm run test
-```
+- **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React.
+- **Session Management**: Persistent conversation history during a session.
+- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management.
+- **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management.
+- **Custom Instructions**: Supports optional AGENTS.md file for project-specific instructions for the AI.
 
 ## Installation
 
 ```bash
-npm install --global mistrado
+npm install -g mistrado
 ```
 
 ## Usage
 
-Start a conversation with Mistral AI:
+Start a session in your project directory:
 
 ```bash
 mistrado
@@ -45,33 +31,30 @@ mistrado
 
 ### First Time Setup
 
-On first run, you'll be prompted to enter your Mistral API key. The key is securely stored in your system keychain for future sessions.
+On your first run, you'll be prompted to enter your Mistral API key. The key is securely stored in your system keychain for future sessions.
 
-### Model Configuration
-
-By default, Mistrado uses the `devstral-small-latest` model. You can configure a different model by creating a settings file:
-
-```bash
-mkdir -p .mistrado
-echo '{"model": "your-preferred-model"}' > .mistrado/settings.json
-```
-
-## Commands
+### Commands
 
 - `/help` - Show available commands
 - `/exit` or `/quit` - Exit the application
 - `/usage` - Show token usage per model
-- `/logout` - Clear stored API key and logout
+- `/logout` - Clear stored API key and exit
+- `/settings` - Select the AI model to use
+- `/clear` - Clear the session history
 
-### Interrupting Operations
+Press **ESC** to quickly stop long-running operations and regain control of the interface.
 
-Press **ESC** to interrupt any running operation, including:
-- AI response generation (API calls in progress)
-- Tool execution (file operations, searches, etc.)
+### Model Configuration
 
-This allows you to quickly stop long-running operations and regain control of the interface.
+By default, Mistrado uses the `devstral-small-latest` model. You can select a different model using the `/settings` command. Settings are only applied to the current project.
 
-### Built-in Tools
+### Custom Instructions
+
+You can customize the AI's behavior for your specific project by creating an `AGENTS.md` file in your project root:
+
+The content of `AGENTS.md` will be automatically included in the system prompt, allowing you to provide project-specific guidelines, coding standards, or context that should be applied to all interactions.
+
+## Built-in Tools
 
 The application includes built-in tools for filesystem operations and content search:
 
@@ -98,37 +81,53 @@ The application includes built-in tools for filesystem operations and content se
 
 These tools enable the AI to help with code analysis, file management, project exploration, web content retrieval, and task organization.
 
-#### Indentation Normalization
+> [!CAUTION]
+> Tool calls requested by the model will be executed without notice. For safety reasons there is no `bash` tool included or option to add your own MCP servers yet.
 
-Mistrado includes intelligent indentation normalization to handle a common limitation where Mistral AI models provide code snippets with incorrect indentation (e.g., using spaces when files use tabs). The system automatically:
+## Model Behavior
 
-- **Detects** your file's indentation style (tabs vs spaces, and space size)
-- **Normalizes** AI-provided code to match your file's format before applying edits
-- **Reports** when normalization occurs for transparency
+Mistrado is built specifically for use with Mistral models. It includes several features specifically to deal with the quirks of those models:
 
-This feature significantly reduces edit failures due to indentation mismatches and works automatically in the background with the `edit` and `multi-edit` tools.
-
-### Custom Instructions
-
-You can customize the AI's behavior for your specific project by creating an `AGENTS.md` file in your project root:
-
-```bash
-# Example AGENTS.md
-echo "# Project Instructions
-
-When working on this codebase:
-- Always use TypeScript strict mode
-- Follow the existing React patterns
-- Run tests after making changes" > AGENTS.md
-```
-
-The content of `AGENTS.md` will be automatically included in the system prompt, allowing you to provide project-specific guidelines, coding standards, or context that should be applied to all interactions.
+- **Tool Call Parsing**: Handling tool calls included in the response message instead of the tool calls arrays.
+- **Smart Indentation Handling**: Automatic indentation normalization to handle inability to output tabs.
+- **Tool Retry Discouragement**: Specific instructions encouraging the model to take a different approach when tool calls fail.
 
 ## Requirements
 
 - Node.js 18 or higher
-- Mistral API key ([get one here](https://console.mistral.ai/))
+- Mistral API key - get one at https://console.mistral.ai/
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode (watch)
+npm run dev
+
+# Build
+npm run build
+
+# Test and lint
+npm run test
+```
+
+## Data collection
+
+Mistrado only sends your requests and API key to Mistral's API. No usage or any other data is recorded.
 
 ## License
 
 MIT
+
+## Roadmap
+
+There are many new features planned for Mistrado, including:
+
+- Headless mode: use Mistrado as a UNIX tool
+- Permission management for tool calls
+- Bash tool for executing shell commands
+- Git diffs for edits
+- Command to add files to request
+- Support for adding MCP tool servers
