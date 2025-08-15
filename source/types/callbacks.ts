@@ -20,7 +20,7 @@ export type ConversationCallbacks = {
 	onError: (error: string | undefined) => void;
 	onHistoryUpdate: (entry: Omit<ConversationEntry, 'id'>) => string;
 	onAbortControllerCreate: () => AbortController;
-	onInterruptionCheck: () => boolean;
+	onInterruptionCheck?: () => boolean;
 	onMessagesUpdate?: (
 		updater: (messages: MistralMessage[]) => MistralMessage[],
 	) => void;
