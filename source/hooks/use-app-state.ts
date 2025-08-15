@@ -8,7 +8,7 @@ import {getMainSystemPrompt} from '../prompts/system.js';
 import {isGitRepo} from '../utils/git.js';
 import {loadCustomInstruction} from '../utils/custom-instructions.js';
 import type {MistralMessage} from '../types/mistral.js';
-import type {ConversationEntry} from '../services/conversation-service.js';
+import type {ConversationEntry} from '../types/callbacks.js';
 
 export function useAppState() {
 	const [mistralService, setMistralService] = useState<

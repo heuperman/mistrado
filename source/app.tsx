@@ -9,6 +9,10 @@ import {useAppState} from './hooks/use-app-state.js';
 import {useSignalHandler} from './hooks/use-signal-handler.js';
 import {CommandHandler} from './commands/command-handler.js';
 import {ConversationService} from './services/conversation-service.js';
+import {
+	createReactConversationCallbacks,
+	createReactCommandCallbacks,
+} from './adapters/react-callbacks.js';
 
 const commandHandler = new CommandHandler();
 const conversationService = new ConversationService();
@@ -86,15 +90,17 @@ export default function App() {
 				addToHistory({type: 'command', content});
 			};
 
+			const commandCallbacks = createReactCommandCallbacks({
+				addToHistory: addToHistoryCommand,
+				setSessionMessages,
+				logAndExit,
+				usage: sessionUsage,
+				openSettings,
+			});
+
 			await commandHandler.handleCommand(
 				commandHandler.extractCommand(trimmedPrompt),
-				{
-					addToHistory: addToHistoryCommand,
-					setSessionMessages,
-					logAndExit,
-					usage: sessionUsage,
-					openSettings,
-				},
+				commandCallbacks,
 			);
 			setIsLoading(false);
 		} else {
@@ -114,6 +120,29 @@ export default function App() {
 
 			const tools = mcpManager ? mcpManager.getAvailableTools() : [];
 
+			const conversationCallbacks = createReactConversationCallbacks({
+				setErrorOutput,
+				setSessionMessages,
+				addToHistory,
+				updateHistoryStatus,
+				updateUsage,
+				setIsLoading,
+				updateTokenCount,
+				checkInterruption() {
+					const interrupted = isInterruptedRef.current;
+					if (interrupted) {
+						isInterruptedRef.current = false;
+					}
+
+					return interrupted;
+				},
+				createAbortController() {
+					const controller = new AbortController();
+					abortControllerRef.current = controller;
+					return controller;
+				},
+			});
+
 			try {
 				await conversationService.handleRequest(
 					{
@@ -122,28 +151,7 @@ export default function App() {
 						tools,
 						mcpManager,
 					},
-					{
-						onUsageUpdate: updateUsage,
-						onError: setErrorOutput,
-						onHistoryUpdate: addToHistory,
-						onHistoryStatusUpdate: updateHistoryStatus,
-						onMessagesUpdate: setSessionMessages,
-						onLoadingChange: setIsLoading,
-						onTokenProgress: updateTokenCount,
-						onInterruptionCheck() {
-							const interrupted = isInterruptedRef.current;
-							if (interrupted) {
-								isInterruptedRef.current = false;
-							}
-
-							return interrupted;
-						},
-						onAbortControllerCreate() {
-							const controller = new AbortController();
-							abortControllerRef.current = controller;
-							return controller;
-						},
-					},
+					conversationCallbacks,
 				);
 			} catch (error) {
 				setErrorOutput(

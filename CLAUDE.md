@@ -187,6 +187,7 @@ The application provides ESC key interrupt functionality that allows users to st
 #### Implementation (`source/services/conversation-service.ts`)
 
 **Interrupt Detection**: The system checks for interruptions at key points:
+
 - During API streaming responses (via AbortController)
 - Between tool call executions (`callbacks.onInterruptionCheck()`)
 
@@ -194,15 +195,17 @@ The application provides ESC key interrupt functionality that allows users to st
 
 1. **Tool Result Messages**: For interrupted tool calls, generates synthetic tool result messages with "Interrupted by user" content and proper `toolCallId` mapping
 2. **Assistant Acknowledgment**: Adds synthetic assistant message with "Process interrupted by user." to complete the conversation turn
-3. **Dual History Updates**: 
+3. **Dual History Updates**:
    - Updates API conversation history (`callbacks.onMessagesUpdate()`) with synthetic messages for proper call/response pairing
    - Updates user-visible conversation history (`callbacks.onHistoryUpdate()`) with interruption acknowledgment
 
 **Key Methods**:
+
 - `handleInterruption()`: Coordinates synthetic message generation and history updates
 - `generateInterruptedToolMessages()`: Creates synthetic tool result messages for incomplete tool calls
 
 **Purpose**: This dual-message approach ensures that:
+
 - API conversation history maintains proper structure (every tool call has a corresponding tool result)
 - Users receive clear feedback about the interruption
 - Future API calls can continue normally without conversation state corruption

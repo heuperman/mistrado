@@ -1,7 +1,6 @@
 import type {UsageInfo} from '@mistralai/mistralai/models/components/usageinfo.js';
-import type {Dispatch, SetStateAction} from 'react';
+import type {CommandCallbacks} from '../types/callbacks.js';
 import {deleteSecret} from '../services/secrets-service.js';
-import type {MistralMessage} from '../types/mistral.js';
 
 const commands = [
 	'exit',
@@ -25,14 +24,6 @@ const commandDescriptions: Record<Command, string> = {
 
 export type Command = (typeof commands)[number];
 
-type CommandHandlers = {
-	addToHistory: (content: string) => void;
-	setSessionMessages: Dispatch<SetStateAction<MistralMessage[]>>;
-	logAndExit: (message: string) => void;
-	usage: Record<string, UsageInfo> | undefined;
-	openSettings?: () => void;
-};
-
 export function formatUsage(
 	usage: Record<string, UsageInfo> | undefined,
 ): string {
@@ -55,10 +46,10 @@ export function generateCommandHelp(command: Command): string {
 
 const commandRegister: Record<
 	Command,
-	(handlers: CommandHandlers) => Promise<void>
+	(handlers: CommandCallbacks) => Promise<void>
 > = {
-	async clear({setSessionMessages}) {
-		setSessionMessages([]);
+	async clear({updateMessages}) {
+		updateMessages(() => []);
 	},
 	async exit({logAndExit, usage}) {
 		logAndExit(formatUsage(usage));
@@ -89,7 +80,7 @@ const commandRegister: Record<
 export class CommandHandler {
 	async handleCommand(
 		commandInput: string,
-		handlers: CommandHandlers,
+		handlers: CommandCallbacks,
 	): Promise<void> {
 		const input = commandInput.trim().toLowerCase();
 		const command: Command = commandAliases[input] ?? (input as Command);
