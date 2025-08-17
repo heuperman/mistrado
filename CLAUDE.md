@@ -65,7 +65,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 #### Framework Adapters
 
 - **React Callbacks** (`source/adapters/react-callbacks.ts`): Bridges React state setters to generic callback interfaces for interactive mode
-- **Print Callbacks** (`source/adapters/print-callbacks.ts`): Captures output for UNIX tool usage in print mode
+- **Print Callbacks** (`source/adapters/print-callbacks.ts`): Captures output and manages error state for UNIX tool usage in print mode
 
 #### Mode Implementations
 
@@ -81,9 +81,9 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **Paths** (`source/utils/paths.ts`): Path utilities and resolution
 - **Regex** (`source/utils/regex.ts`): Regular expression utilities
 - **Validation** (`source/utils/validation.ts`): Input validation utilities
-- **Stdin** (`source/utils/stdin.ts`): Handle stdin input for UNIX tool piping
-- **Version** (`source/utils/version.ts`): Read version from package.json
-- **Error Handling** (`source/utils/error-handling.ts`): UNIX signal handling (SIGPIPE, SIGINT, SIGTERM)
+- **Stdin** (`source/utils/stdin.ts`): Handle stdin input for UNIX tool piping with TTY detection
+- **Version** (`source/utils/version.ts`): Read version from package.json for CLI version display
+- **Error Handling** (`source/utils/error-handling.ts`): UNIX signal handling (SIGPIPE, SIGINT, SIGTERM) for graceful shutdown
 
 ### Built-in Tool System
 
@@ -267,6 +267,9 @@ Start the CLI without flags to enter interactive mode:
 
 ```bash
 mistrado
+
+# Or start with an initial prompt
+mistrado "Help me understand this codebase"
 ```
 
 Features:
@@ -277,6 +280,7 @@ Features:
 - Slash commands (`/help`, `/usage`, `/logout`, `/exit`, `/quit`)
 - API key storage via system keychain
 - Session state management
+- Initial prompt support via command line argument
 
 #### Print Mode (UNIX Tool)
 
@@ -299,9 +303,10 @@ Features:
 - UNIX-standard CLI behavior (stdin/stdout/stderr)
 - Proper exit codes (0 for success, 1 for failure)
 - SIGPIPE handling for piped output
-- Environment variable API key only
+- Environment variable API key only (no keychain storage)
 - Same conversation engine and tools as interactive mode
 - Final output only (no streaming or intermediate states)
+- TTY detection for stdin input validation
 
 ### Key Patterns
 

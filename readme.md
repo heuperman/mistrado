@@ -13,9 +13,9 @@ I created this tool because I love the fast, cheap and capable models Mistral pr
 - **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
 - **UNIX Tool Mode**: Standard CLI tool with stdin/stdout support for automation and scripting
 - **Session Management**: Persistent conversation history during interactive sessions
-- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management
-- **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management in interactive mode
-- **Custom Instructions**: Supports optional AGENTS.md file for project-specific instructions for the AI
+- **Built-in Tools**: Comprehensive filesystem operations, search capabilities, and task management
+- **Secure API Key Storage**: Uses system keychain for secure credential management
+- **Custom Instructions**: Project-specific AI behavior via optional AGENTS.md file
 
 ## Installation
 
@@ -32,7 +32,11 @@ Mistrado operates in two modes:
 Start an interactive session in your project directory:
 
 ```bash
+# Start interactive session
 mistrado
+
+# Start with an initial prompt
+mistrado "Help me understand this codebase"
 ```
 
 #### First Time Setup
@@ -41,7 +45,7 @@ On your first run, you'll be prompted to enter your Mistral API key. The key is 
 
 ### UNIX Tool Mode
 
-With the `--prompt` (or `-p`) flag, Mistrado will run a single prompt and output the final response to stdout. This allows you to use Mistrado as a standard UNIX tool for automation and scripting:
+With the `--print` (or `-p`) flag, Mistrado will run a single prompt and output the final response to stdout. This allows you to use Mistrado as a standard UNIX tool for automation and scripting:
 
 ```bash
 # Direct prompt
@@ -58,10 +62,11 @@ mistrado -h
 mistrado -v
 ```
 
-**Environment Setup for Unix Mode:**
+**Environment Setup for UNIX Mode:**
 
 - Set `MISTRAL_API_KEY` environment variable
--
+- Proper exit codes: 0 for success, 1 for errors
+- SIGPIPE handling for shell pipelines
 
 ### Interactive Mode Commands
 
@@ -86,41 +91,25 @@ The content of `AGENTS.md` will be automatically included in the system prompt, 
 
 ## Built-in Tools
 
-The application includes built-in tools for filesystem operations and content search:
+Mistrado includes comprehensive tools that enable the AI to work with your codebase:
 
-**Filesystem Operations:**
+**File Operations**: `read`, `write`, `edit`, `multi-edit`, `ls`  
+**Search & Discovery**: `glob` (pattern matching), `grep` (content search)  
+**Web Integration**: `webfetch` (HTTP requests)  
+**Task Management**: `todo-write` (progress tracking)
 
-- `read`: File content reading with offset/limit support
-- `write`: File creation and overwriting
-- `edit`: String replacement in files
-- `multi-edit`: Multiple sequential edits in a single operation
-- `ls`: Directory listing with glob ignore patterns
-
-**Search Tools:**
-
-- `glob`: Find files by pattern matching (e.g., `*.js`, `**/*.ts`)
-- `grep`: Search file contents using regular expressions
-
-**Web Tools:**
-
-- `webfetch`: Fetch content from URLs via HTTP GET requests
-
-**Task Management:**
-
-- `todo-write`: Create and manage structured task lists with progress tracking
-
-These tools enable the AI to help with code analysis, file management, project exploration, web content retrieval, and task organization.
+These tools enable the AI to analyze code, manage files, explore projects, fetch web content, and organize complex tasks.
 
 > [!CAUTION]
 > Tool calls requested by the model will be executed without notice. For safety reasons there is no `bash` tool included or option to add your own MCP servers yet.
 
-## Model Behavior
+## Model Optimizations
 
-Mistrado is built specifically for use with Mistral models. It includes several features specifically to deal with the quirks of those models:
+Mistrado is optimized specifically for Mistral models with smart handling for:
 
-- **Tool Call Parsing**: Handling tool calls included in the response message instead of the tool calls arrays.
-- **Smart Indentation Handling**: Automatic indentation normalization to handle inability to output tabs.
-- **Tool Retry Discouragement**: Specific instructions encouraging the model to take a different approach when tool calls fail.
+- **Tool Call Discovery**: Recognising and executing tool calls, even when included in the response message instead of the tool calls array
+- **Indentation Normalization**: More reliable edit request with smart transformation of incorrect indentation style matching
+- **Retry Strategy Suggestions**: Less tool call looping with specific instructions to not retry failed requests with identical arguments
 
 ## Requirements
 
@@ -153,12 +142,12 @@ MIT
 
 ## Roadmap
 
-There are many new features planned for Mistrado, including:
+Upcoming features to make Mistrado even better:
 
 - Permission management for tool calls
 - Bash tool for executing shell commands
-- Git diffs for edits
-- Command to add files to request
-- Support for adding MCP tool servers
-- Setting flags for UNIX tool mode
+- Git diffs for edit operations
+- File reference command
+- MCP server integration support
+- Configuration flags for UNIX mode
 - Conversation persistence across sessions
