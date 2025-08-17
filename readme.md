@@ -9,11 +9,13 @@ I created this tool because I love the fast, cheap and capable models Mistral pr
 
 ## Features
 
-- **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React.
-- **Session Management**: Persistent conversation history during a session.
-- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management.
-- **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management.
-- **Custom Instructions**: Supports optional AGENTS.md file for project-specific instructions for the AI.
+- **Dual Mode Operation**: Interactive terminal UI for conversations and UNIX-standard CLI tool for scripting
+- **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
+- **UNIX Tool Mode**: Standard CLI tool with stdin/stdout support for automation and scripting
+- **Session Management**: Persistent conversation history during interactive sessions
+- **Built-in Tools**: Comprehensive filesystem operations (read, write, edit, ls, multi-edit), search capabilities (glob, grep), and task management
+- **Secure API Key Storage**: Uses system keychain (keytar) for secure credential management in interactive mode
+- **Custom Instructions**: Supports optional AGENTS.md file for project-specific instructions for the AI
 
 ## Installation
 
@@ -23,17 +25,45 @@ npm install -g mistrado
 
 ## Usage
 
-Start a session in your project directory:
+Mistrado operates in two modes:
+
+### Interactive Mode
+
+Start an interactive session in your project directory:
 
 ```bash
 mistrado
 ```
 
-### First Time Setup
+#### First Time Setup
 
 On your first run, you'll be prompted to enter your Mistral API key. The key is securely stored in your system keychain for future sessions.
 
-### Commands
+### UNIX Tool Mode
+
+With the `--prompt` (or `-p`) flag, Mistrado will run a single prompt and output the final response to stdout. This allows you to use Mistrado as a standard UNIX tool for automation and scripting:
+
+```bash
+# Direct prompt
+MISTRAL_API_KEY=your_key mistrado -p "What is 2+2?"
+
+# Pipe input from stdin
+echo "Write a haiku about programming" | MISTRAL_API_KEY=your_key mistrado -p
+
+# Use in scripts
+cat requirements.txt | MISTRAL_API_KEY=your_key mistrado -p "Generate test cases for these requirements"
+
+# Help and version
+mistrado -h
+mistrado -v
+```
+
+**Environment Setup for Unix Mode:**
+
+- Set `MISTRAL_API_KEY` environment variable
+-
+
+### Interactive Mode Commands
 
 - `/help` - Show available commands
 - `/exit` or `/quit` - Exit the application
@@ -125,9 +155,10 @@ MIT
 
 There are many new features planned for Mistrado, including:
 
-- Headless mode: use Mistrado as a UNIX tool
 - Permission management for tool calls
 - Bash tool for executing shell commands
 - Git diffs for edits
 - Command to add files to request
 - Support for adding MCP tool servers
+- Setting flags for UNIX tool mode
+- Conversation persistence across sessions
