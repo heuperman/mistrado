@@ -12,8 +12,11 @@ program
 	.name('mistrado')
 	.description('AI conversation tool powered by Mistral AI')
 	.version(getVersion(), '-v, --version')
-	.option('-p, --print', 'Print mode: run single prompt and output result')
-	.argument('[prompt]', 'Prompt text (when using --print)')
+	.option('-p, --print', 'Run single prompt and print result')
+	.argument(
+		'[prompt]',
+		'Prompt text (for print mode or as starting prompt in interactive mode)',
+	)
 	.helpOption('-h, --help', 'Display help information');
 
 program.parse();
@@ -22,15 +25,20 @@ const options = program.opts();
 const {args} = program;
 
 if (options['print']) {
-	// Non-interactive mode - reuse existing services
+	// Non-interactive mode
 	await handlePrintMode(args[0]);
 } else {
-	// Interactive mode (existing behavior)
+	// Interactive mode
 	setTerminalTitle('≋ Mistrado');
+
+	const initialPrompt = args[0];
+
 	render(
 		<React.StrictMode>
-			<App />
+			<App initialPrompt={initialPrompt} />
 		</React.StrictMode>,
-		{exitOnCtrlC: false},
+		{
+			exitOnCtrlC: false,
+		},
 	);
 }

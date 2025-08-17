@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import {Box, Text, useInput} from 'ink';
 import TextInput from 'ink-text-input';
 import Login from './components/login.js';
@@ -17,7 +17,11 @@ import {
 const commandHandler = new CommandHandler();
 const conversationService = new ConversationService();
 
-export default function App() {
+type AppProps = {
+	readonly initialPrompt?: string;
+};
+
+export default function App({initialPrompt}: AppProps = {}) {
 	const {
 		mistralService,
 		mcpManager,
@@ -48,6 +52,7 @@ export default function App() {
 	} = useAppState();
 
 	const isInterruptedRef = React.useRef(false);
+	const hasAutoSubmittedRef = React.useRef(false);
 	const abortControllerRef = React.useRef<AbortController | undefined>(
 		undefined,
 	);
@@ -70,100 +75,133 @@ export default function App() {
 		}
 	});
 
-	const handleSubmit = async (promptInput: string) => {
-		setIsLoading(true);
-		setPrompt('');
-		setErrorOutput(undefined);
-		isInterruptedRef.current = false;
-		abortControllerRef.current = undefined;
-		resetTokenCount();
+	const handleSubmit = useCallback(
+		async (promptInput: string) => {
+			setIsLoading(true);
+			setPrompt('');
+			setErrorOutput(undefined);
+			isInterruptedRef.current = false;
+			abortControllerRef.current = undefined;
+			resetTokenCount();
 
-		const trimmedPrompt = promptInput.trim();
+			const trimmedPrompt = promptInput.trim();
 
-		addToHistory({
-			type: 'user',
-			content: trimmedPrompt,
-		});
-
-		if (commandHandler.isCommand(trimmedPrompt)) {
-			const addToHistoryCommand = (content: string) => {
-				addToHistory({type: 'command', content});
-			};
-
-			const commandCallbacks = createReactCommandCallbacks({
-				addToHistory: addToHistoryCommand,
-				setSessionMessages,
-				logAndExit,
-				usage: sessionUsage,
-				openSettings,
+			addToHistory({
+				type: 'user',
+				content: trimmedPrompt,
 			});
 
-			await commandHandler.handleCommand(
-				commandHandler.extractCommand(trimmedPrompt),
-				commandCallbacks,
-			);
-			setIsLoading(false);
-		} else {
-			if (!mistralService) {
-				setErrorOutput(
-					'Mistral service not initialized. Please wait or restart if problem persists.',
+			if (commandHandler.isCommand(trimmedPrompt)) {
+				const addToHistoryCommand = (content: string) => {
+					addToHistory({type: 'command', content});
+				};
+
+				const commandCallbacks = createReactCommandCallbacks({
+					addToHistory: addToHistoryCommand,
+					setSessionMessages,
+					logAndExit,
+					usage: sessionUsage,
+					openSettings,
+				});
+
+				await commandHandler.handleCommand(
+					commandHandler.extractCommand(trimmedPrompt),
+					commandCallbacks,
 				);
 				setIsLoading(false);
-				return;
-			}
+			} else {
+				if (!mistralService) {
+					setErrorOutput(
+						'Mistral service not initialized. Please wait or restart if problem persists.',
+					);
+					setIsLoading(false);
+					return;
+				}
 
-			const updatedMessages = [
-				...sessionMessages,
-				{role: 'user' as const, content: trimmedPrompt},
-			];
-			setSessionMessages(updatedMessages);
+				const updatedMessages = [
+					...sessionMessages,
+					{role: 'user' as const, content: trimmedPrompt},
+				];
+				setSessionMessages(updatedMessages);
 
-			const tools = mcpManager ? mcpManager.getAvailableTools() : [];
+				const tools = mcpManager ? mcpManager.getAvailableTools() : [];
 
-			const conversationCallbacks = createReactConversationCallbacks({
-				setErrorOutput,
-				setSessionMessages,
-				addToHistory,
-				updateHistoryStatus,
-				updateUsage,
-				setIsLoading,
-				updateTokenCount,
-				checkInterruption() {
-					const interrupted = isInterruptedRef.current;
-					if (interrupted) {
-						isInterruptedRef.current = false;
-					}
+				const conversationCallbacks = createReactConversationCallbacks({
+					setErrorOutput,
+					setSessionMessages,
+					addToHistory,
+					updateHistoryStatus,
+					updateUsage,
+					setIsLoading,
+					updateTokenCount,
+					checkInterruption() {
+						const interrupted = isInterruptedRef.current;
+						if (interrupted) {
+							isInterruptedRef.current = false;
+						}
 
-					return interrupted;
-				},
-				createAbortController() {
-					const controller = new AbortController();
-					abortControllerRef.current = controller;
-					return controller;
-				},
-			});
-
-			try {
-				await conversationService.handleRequest(
-					{
-						service: mistralService,
-						messages: updatedMessages,
-						tools,
-						mcpManager,
+						return interrupted;
 					},
-					conversationCallbacks,
-				);
-			} catch (error) {
-				setErrorOutput(
-					`Error getting response: ${
-						error instanceof Error ? error.message : String(error)
-					}`,
-				);
-			}
+					createAbortController() {
+						const controller = new AbortController();
+						abortControllerRef.current = controller;
+						return controller;
+					},
+				});
 
-			setIsLoading(false);
+				try {
+					await conversationService.handleRequest(
+						{
+							service: mistralService,
+							messages: updatedMessages,
+							tools,
+							mcpManager,
+						},
+						conversationCallbacks,
+					);
+				} catch (error) {
+					setErrorOutput(
+						`Error getting response: ${
+							error instanceof Error ? error.message : String(error)
+						}`,
+					);
+				}
+
+				setIsLoading(false);
+			}
+		},
+		[
+			setIsLoading,
+			setPrompt,
+			setErrorOutput,
+			resetTokenCount,
+			addToHistory,
+			setSessionMessages,
+			logAndExit,
+			sessionUsage,
+			openSettings,
+			mistralService,
+			sessionMessages,
+			mcpManager,
+			updateHistoryStatus,
+			updateUsage,
+			updateTokenCount,
+		],
+	);
+
+	// Auto-submit initial prompt after services are initialized
+	React.useEffect(() => {
+		if (
+			initialPrompt &&
+			mistralService &&
+			!isLoading &&
+			apiKey &&
+			!hasAutoSubmittedRef.current
+		) {
+			hasAutoSubmittedRef.current = true;
+			void handleSubmit(initialPrompt);
 		}
-	};
+	}, [initialPrompt, mistralService, isLoading, apiKey, handleSubmit]);
 
 	if (!apiKey) return <Login setApiKey={setApiKey} />;
 

@@ -108,8 +108,9 @@ test('CommandHandler.handleCommand executes clear command', async t => {
 	const mockHandlers = {
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		addToHistory() {},
-		setSessionMessages(messages: any) {
-			t.deepEqual(messages, []);
+		updateMessages(updater: (messages: any[]) => any[]) {
+			const result = updater([{id: 1, content: 'test'}]);
+			t.deepEqual(result, []);
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
@@ -127,7 +128,7 @@ test('CommandHandler.handleCommand executes help command', async t => {
 			addedToHistory = content;
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
@@ -146,7 +147,7 @@ test('CommandHandler.handleCommand executes usage command', async t => {
 			addedToHistory = content;
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: {
@@ -171,7 +172,7 @@ test('CommandHandler.handleCommand executes logout command', async t => {
 			addedToHistory = content;
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
@@ -188,7 +189,7 @@ test('CommandHandler.handleCommand executes exit command', async t => {
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		addToHistory() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		logAndExit(message: string) {
 			exitMessage = message;
 		},
@@ -212,7 +213,7 @@ test('CommandHandler.handleCommand executes settings command', async t => {
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		addToHistory() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
@@ -231,7 +232,7 @@ test('CommandHandler.handleCommand handles settings command without openSettings
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		addToHistory() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
@@ -248,7 +249,7 @@ test('CommandHandler.handleCommand handles command aliases', async t => {
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		addToHistory() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		logAndExit() {
 			exitCalled = true;
 		},
@@ -267,7 +268,7 @@ test('CommandHandler.handleCommand handles unknown command', async t => {
 			addedToHistory = content;
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
@@ -286,7 +287,7 @@ test('CommandHandler.handleCommand handles case insensitive commands', async t =
 			helpCalled = true;
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
@@ -304,7 +305,7 @@ test('CommandHandler.handleCommand trims whitespace from commands', async t => {
 			helpCalled = true;
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		setSessionMessages() {},
+		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
 		usage: undefined,
