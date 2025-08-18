@@ -1,38 +1,14 @@
-import type {
-	AssistantMessage,
-	UsageInfo,
-} from '@mistralai/mistralai/models/components/index.js';
+import type {AssistantMessage} from '@mistralai/mistralai/models/components/index.js';
 import type {
 	MistralContentChunk,
 	MistralMessage,
 	MistralTool,
 	MistralToolCall,
 } from '../types/mistral.js';
+import type {ConversationCallbacks} from '../types/callbacks.js';
 import {formatToolCallDisplay, formatTodoContext} from '../utils/app-utils.js';
 import type {MistralService} from './mistral-service.js';
 import type {McpManager} from './mcp-manager.js';
-
-export type ToolCallStatus = 'running' | 'success' | 'error';
-
-export type ConversationEntry = {
-	id: string;
-	type: 'user' | 'assistant' | 'command' | 'tool';
-	content: string;
-	status?: ToolCallStatus;
-	toolCallId?: string;
-};
-
-type ConversationCallbacks = {
-	onUsageUpdate: (usage: UsageInfo, model: string) => void;
-	onError: React.Dispatch<React.SetStateAction<string | undefined>>;
-	onHistoryUpdate: (entry: Omit<ConversationEntry, 'id'>) => string;
-	onHistoryStatusUpdate: (id: string, status: 'success' | 'error') => void;
-	onMessagesUpdate: React.Dispatch<React.SetStateAction<MistralMessage[]>>;
-	onLoadingChange: (loading: boolean) => void;
-	onTokenProgress: (tokens: number) => void;
-	onInterruptionCheck: () => boolean;
-	onAbortControllerCreate: () => AbortController;
-};
 
 type HandleRequestParameters = {
 	service: MistralService;
@@ -74,11 +50,14 @@ export class ConversationService {
 				}
 
 				callbacks.onError(error);
-				callbacks.onLoadingChange(false);
+				if (callbacks.onLoadingChange) {
+					callbacks.onLoadingChange(false);
+				}
+
 				return;
 			}
 
-			if (usage) {
+			if (callbacks.onUsageUpdate && usage) {
 				callbacks.onUsageUpdate(usage, model);
 			}
 
@@ -88,17 +67,22 @@ export class ConversationService {
 			);
 			if (!processResult.success) {
 				callbacks.onError(processResult.error);
-				callbacks.onLoadingChange(false);
+				if (callbacks.onLoadingChange) {
+					callbacks.onLoadingChange(false);
+				}
+
 				return;
 			}
 
 			const {updatedMessages, toolCalls} = processResult;
 
-			// Update session messages with assistant messages
-			callbacks.onMessagesUpdate(currentMessages => [
-				...currentMessages,
-				...updatedMessages,
-			]);
+			if (callbacks.onMessagesUpdate) {
+				// Update session messages with assistant messages
+				callbacks.onMessagesUpdate(currentMessages => [
+					...currentMessages,
+					...updatedMessages,
+				]);
+			}
 
 			if (toolCalls.length > 0) {
 				await this.handleToolCalls(
@@ -119,7 +103,10 @@ export class ConversationService {
 			callbacks.onError(
 				`Unexpected error in conversation handling: ${errorMessage}`,
 			);
-			callbacks.onLoadingChange(false);
+
+			if (callbacks.onLoadingChange) {
+				callbacks.onLoadingChange(false);
+			}
 		}
 	}
 
@@ -276,7 +263,11 @@ export class ConversationService {
 				callbacks.onError(
 					'MCP Manager not initialized. Please wait or restart if problem persists.',
 				);
-				callbacks.onLoadingChange(false);
+
+				if (callbacks.onLoadingChange) {
+					callbacks.onLoadingChange(false);
+				}
+
 				return;
 			}
 
@@ -305,7 +296,10 @@ export class ConversationService {
 							throw new Error('Tool call returned empty result');
 						}
 
-						callbacks.onHistoryStatusUpdate(toolEntryId, 'success');
+						if (callbacks.onHistoryStatusUpdate) {
+							callbacks.onHistoryStatusUpdate(toolEntryId, 'success');
+						}
+
 						return {success: true, result: result as MistralMessage};
 					} catch (toolError) {
 						const errorMessage =
@@ -313,7 +307,7 @@ export class ConversationService {
 								? toolError.message
 								: String(toolError);
 
-						if (toolEntryId !== undefined) {
+						if (callbacks.onHistoryStatusUpdate && toolEntryId !== undefined) {
 							callbacks.onHistoryStatusUpdate(toolEntryId, 'error');
 						}
 
@@ -348,16 +342,22 @@ export class ConversationService {
 				callbacks.onError(
 					'All tool calls failed - unable to continue conversation',
 				);
-				callbacks.onLoadingChange(false);
+
+				if (callbacks.onLoadingChange) {
+					callbacks.onLoadingChange(false);
+				}
+
 				return;
 			}
 
 			// Add tool results to the message chain
 			const newMessages = [...updatedMessages];
-			callbacks.onMessagesUpdate(messages => [...messages, ...newMessages]);
+			if (callbacks.onMessagesUpdate) {
+				callbacks.onMessagesUpdate(messages => [...messages, ...newMessages]);
+			}
 
 			// Check for interruption before continuing the conversation
-			if (callbacks.onInterruptionCheck()) {
+			if (callbacks.onInterruptionCheck?.()) {
 				this.handleInterruption(callbacks, toolCalls);
 				return;
 			}
@@ -371,7 +371,9 @@ export class ConversationService {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 			callbacks.onError(`Error handling tool calls: ${errorMessage}`);
-			callbacks.onLoadingChange(false);
+			if (callbacks.onLoadingChange) {
+				callbacks.onLoadingChange(false);
+			}
 		}
 	}
 
@@ -449,11 +451,13 @@ export class ConversationService {
 
 		interruptedMessages.push(assistantMessage);
 
-		// Add synthetic messages to maintain proper API conversation flow
-		callbacks.onMessagesUpdate(messages => [
-			...messages,
-			...interruptedMessages,
-		]);
+		if (callbacks.onMessagesUpdate) {
+			// Add synthetic messages to maintain proper API conversation flow
+			callbacks.onMessagesUpdate(messages => [
+				...messages,
+				...interruptedMessages,
+			]);
+		}
 
 		// Add visual interruption acknowledgment to conversation history
 		callbacks.onHistoryUpdate({
@@ -462,8 +466,9 @@ export class ConversationService {
 			status: 'error',
 		});
 
-		// End loading state
-		callbacks.onLoadingChange(false);
+		if (callbacks.onLoadingChange) {
+			callbacks.onLoadingChange(false);
+		}
 	}
 
 	private generateInterruptedToolMessages(

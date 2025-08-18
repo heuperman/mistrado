@@ -11,7 +11,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is an Ink-based CLI application that provides a conversational interface to Mistral AI's API. The application uses React components to render a terminal UI and provides built-in filesystem and search tools.
+This is a dual-mode CLI application that provides both interactive and non-interactive interfaces to Mistral AI's API:
+
+1. **Interactive Mode**: Ink-based React UI for terminal-based conversations
+2. **Print Mode**: UNIX-standard tool for scripting and automation
+
+The application uses a **framework-agnostic core** with adapters for different environments.
 
 ### Core Flow
 
@@ -25,7 +30,7 @@ When users submit prompts, the app:
 1. Sends message + available tools to Mistral API
 2. If AI responds with tool calls, executes them via Tool Manager
 3. Returns tool results to continue the conversation
-4. Displays streaming responses in real-time terminal UI
+4. Displays responses (streaming in interactive mode, final output in print mode)
 
 ### Modular Architecture
 
@@ -46,16 +51,26 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **useAppState** (`source/hooks/use-app-state.ts`): Centralized state management for services, conversation, loading states, and initialization logic
 - **useSignalHandler** (`source/hooks/use-signal-handler.ts`): Process signal handling (SIGINT/SIGTERM) and graceful shutdown coordination
 
-#### Services Layer
+#### Services Layer (Framework-Agnostic Core)
 
-- **ConversationService** (`source/services/conversation-service.ts`): Handles AI interactions, tool calling, and conversation flow with callback-based architecture
+- **ConversationService** (`source/services/conversation-service.ts`): Framework-agnostic conversation engine using generic callback interfaces. Handles AI interactions, tool calling, and conversation flow
 - **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `devstral-small-latest`)
 - **ToolManager** (`source/services/tool-manager.ts`): Manages built-in tools, handles tool registration and execution
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 
 #### Command System
 
-- **CommandHandler** (`source/commands/command-handler.ts`): Encapsulates slash command logic, aliases, descriptions, and execution
+- **CommandHandler** (`source/commands/command-handler.ts`): Framework-agnostic command handling using generic callback interfaces
+
+#### Framework Adapters
+
+- **React Callbacks** (`source/adapters/react-callbacks.ts`): Bridges React state setters to generic callback interfaces for interactive mode
+- **Print Callbacks** (`source/adapters/print-callbacks.ts`): Captures output and manages error state for UNIX tool usage in print mode
+
+#### Mode Implementations
+
+- **Interactive Mode** (`source/app.tsx`): Full React-based UI with streaming responses and real-time interaction
+- **Print Mode** (`source/modes/print-mode.ts`): UNIX-standard CLI tool that outputs final results to stdout
 
 #### Utilities
 
@@ -66,6 +81,9 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **Paths** (`source/utils/paths.ts`): Path utilities and resolution
 - **Regex** (`source/utils/regex.ts`): Regular expression utilities
 - **Validation** (`source/utils/validation.ts`): Input validation utilities
+- **Stdin** (`source/utils/stdin.ts`): Handle stdin input for UNIX tool piping with TTY detection
+- **Version** (`source/utils/version.ts`): Read version from package.json for CLI version display
+- **Error Handling** (`source/utils/error-handling.ts`): UNIX signal handling (SIGPIPE, SIGINT, SIGTERM) for graceful shutdown
 
 ### Built-in Tool System
 
@@ -187,6 +205,7 @@ The application provides ESC key interrupt functionality that allows users to st
 #### Implementation (`source/services/conversation-service.ts`)
 
 **Interrupt Detection**: The system checks for interruptions at key points:
+
 - During API streaming responses (via AbortController)
 - Between tool call executions (`callbacks.onInterruptionCheck()`)
 
@@ -194,39 +213,117 @@ The application provides ESC key interrupt functionality that allows users to st
 
 1. **Tool Result Messages**: For interrupted tool calls, generates synthetic tool result messages with "Interrupted by user" content and proper `toolCallId` mapping
 2. **Assistant Acknowledgment**: Adds synthetic assistant message with "Process interrupted by user." to complete the conversation turn
-3. **Dual History Updates**: 
+3. **Dual History Updates**:
    - Updates API conversation history (`callbacks.onMessagesUpdate()`) with synthetic messages for proper call/response pairing
    - Updates user-visible conversation history (`callbacks.onHistoryUpdate()`) with interruption acknowledgment
 
 **Key Methods**:
+
 - `handleInterruption()`: Coordinates synthetic message generation and history updates
 - `generateInterruptedToolMessages()`: Creates synthetic tool result messages for incomplete tool calls
 
 **Purpose**: This dual-message approach ensures that:
+
 - API conversation history maintains proper structure (every tool call has a corresponding tool result)
 - Users receive clear feedback about the interruption
 - Future API calls can continue normally without conversation state corruption
 
-### Type System & Converters
+### Framework-Agnostic Type System
 
+- **Callback Types** (`source/types/callbacks.ts`): Generic callback interfaces for conversation and command handling
 - **Mistral Types** (`source/types/mistral.ts`): Mistral API message and tool types
 - **MCP Types** (`source/types/mcp.ts`): MCP protocol types for tool definitions
 
+#### Callback Architecture
+
+The application uses a **generic callback system** that enables the same core logic to work in multiple environments:
+
+**ConversationCallbacks**: Framework-agnostic interface for conversation handling
+
+- `onError`: Error handling
+- `onHistoryUpdate`: Conversation history updates
+- `onMessagesUpdate`: Message state updates (optional for non-stateful environments)
+- `onAbortControllerCreate`: Abort controller creation for interruptions
+- Optional callbacks for loading states, token progress, usage tracking
+
+**CommandCallbacks**: Framework-agnostic interface for command handling
+
+- `addToHistory`: Add entries to conversation history
+- `updateMessages`: Update message state
+- `logAndExit`: Handle application exit with logging
+- `usage`: Access to token usage data
+- `openSettings`: Settings panel access (optional)
+
+**Adapter Pattern**: Environment-specific adapters implement these interfaces:
+
+- **React Adapter**: Bridges to React state setters and hooks
+- **Print Adapter**: Captures output for UNIX tool usage
+
+### Usage Modes
+
+#### Interactive Mode (Default)
+
+Start the CLI without flags to enter interactive mode:
+
+```bash
+mistrado
+
+# Or start with an initial prompt
+mistrado "Help me understand this codebase"
+```
+
+Features:
+
+- Full React-based terminal UI with Ink
+- Real-time streaming responses
+- ESC key interrupt handling
+- Slash commands (`/help`, `/usage`, `/logout`, `/exit`, `/quit`)
+- API key storage via system keychain
+- Session state management
+- Initial prompt support via command line argument
+
+#### Print Mode (UNIX Tool)
+
+Use the `-p/--print` flag for non-interactive usage:
+
+```bash
+# With command line argument
+MISTRAL_API_KEY=your_key mistrado -p "What is 2+2?"
+
+# With stdin piping
+echo "Write a haiku about coding" | MISTRAL_API_KEY=your_key mistrado -p
+
+# Help and version
+mistrado -h
+mistrado -v
+```
+
+Features:
+
+- UNIX-standard CLI behavior (stdin/stdout/stderr)
+- Proper exit codes (0 for success, 1 for failure)
+- SIGPIPE handling for piped output
+- Environment variable API key only (no keychain storage)
+- Same conversation engine and tools as interactive mode
+- Final output only (no streaming or intermediate states)
+- TTY detection for stdin input validation
+
 ### Key Patterns
 
+- **Framework-Agnostic Core**: Conversation engine works in any environment via callback adapters
+- **Adapter Pattern**: Environment-specific adapters bridge core logic to UI frameworks
 - **Separation of Concerns**: Each module has a single, well-defined responsibility
-- **Custom React Hooks**: Encapsulate complex state logic and side effects
-- **Callback Pattern**: ConversationService uses callbacks for loose coupling with UI state
+- **Generic Callback Interfaces**: Enable same core logic across React UI and UNIX tool
+- **Custom React Hooks**: Encapsulate complex state logic and side effects (interactive mode only)
 - **React Component Composition**: Reusable components with readonly props following React best practices
 - **Centralized State Management**: useAppState hook manages all application state in one place
-- **Streaming responses** from Mistral API with real-time UI updates
-- **Slash commands** (`/help`, `/usage`, `/logout`, `/exit`, `/quit`) for session management
+- **Streaming responses** from Mistral API with real-time UI updates (interactive mode)
 - **Conversation history** maintained as `MistralMessage[]` array with system prompt injection
 - **Graceful shutdown** handling via signal handlers
 - **Tool execution results** fed back into conversation for AI followup
 - **Prefer types over interfaces** for type definitions
 - **Boolean prop naming**: Use `isLoading` instead of `loading` for clarity
-- **ESC interrupt handling**: Users can interrupt running operations (API calls and tool execution) by pressing ESC key. The system maintains conversation integrity by injecting synthetic messages into both the API conversation history and user-visible history to properly handle incomplete operations.
+- **ESC interrupt handling**: Users can interrupt running operations (API calls and tool execution) by pressing ESC key in interactive mode
 
 ### System Prompt
 

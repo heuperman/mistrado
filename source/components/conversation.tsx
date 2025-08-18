@@ -1,9 +1,6 @@
 import React from 'react';
 import {Box, Text} from 'ink';
-import type {
-	ConversationEntry,
-	ToolCallStatus,
-} from '../services/conversation-service.js';
+import type {ConversationEntry, ToolCallStatus} from '../types/callbacks.js';
 import Loading from './loading.js';
 import Markdown from './markdown.js';
 

@@ -67,6 +67,8 @@ export class MistralService {
 					model,
 					messages,
 					tools,
+					temperature: 1,
+					maxTokens: 32_000,
 				},
 				{
 					timeoutMs: 60_000,
