@@ -1,10 +1,10 @@
 import React, {useCallback} from 'react';
 import {Box, Text, useInput} from 'ink';
 import TextInput from 'ink-text-input';
-import Login from './components/login.js';
-import Hero from './components/hero.js';
-import Conversation from './components/conversation.js';
-import {Settings} from './components/settings.js';
+import Login from './components/Login.js';
+import Conversation from './components/Conversation.js';
+import {Settings} from './components/Settings.js';
+import Hero from './components/Hero.js';
 import {useAppState} from './hooks/use-app-state.js';
 import {useSignalHandler} from './hooks/use-signal-handler.js';
 import {CommandHandler} from './commands/command-handler.js';
