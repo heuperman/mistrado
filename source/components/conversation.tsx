@@ -1,8 +1,8 @@
 import React from 'react';
 import {Box, Text} from 'ink';
 import type {ConversationEntry, ToolCallStatus} from '../types/callbacks.js';
-import Loading from './loading.js';
-import Markdown from './markdown.js';
+import Loading from './Loading.js';
+import Markdown from './Markdown.js';
 
 type ConversationProps = {
 	readonly history: readonly ConversationEntry[];

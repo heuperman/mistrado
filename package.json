@@ -74,7 +74,16 @@
 		"prettier": true,
 		"semicolon": true,
 		"rules": {
-			"react/prop-types": "off"
+			"react/prop-types": "off",
+			"unicorn/filename-case": [
+				"error",
+				{
+					"cases": {
+						"kebabCase": true,
+						"pascalCase": true
+					}
+				}
+			]
 		}
 	},
 	"prettier": "@vdemedes/prettier-config",
