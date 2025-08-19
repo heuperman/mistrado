@@ -114,6 +114,7 @@ test('CommandHandler.handleCommand executes clear command', async t => {
 		},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 
@@ -131,6 +132,7 @@ test('CommandHandler.handleCommand executes help command', async t => {
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 
@@ -150,6 +152,7 @@ test('CommandHandler.handleCommand executes usage command', async t => {
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: {
 			'test-model': {
 				promptTokens: 50,
@@ -167,6 +170,7 @@ test('CommandHandler.handleCommand executes usage command', async t => {
 test('CommandHandler.handleCommand executes logout command', async t => {
 	const handler = new CommandHandler();
 	let addedToHistory = '';
+	let loggedOut = false;
 	const mockHandlers = {
 		addToHistory(content: string) {
 			addedToHistory = content;
@@ -175,10 +179,14 @@ test('CommandHandler.handleCommand executes logout command', async t => {
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		async deleteSecret() {
+			loggedOut = true;
+		},
 		usage: undefined,
 	};
 
 	await handler.handleCommand('logout', mockHandlers);
+	t.true(loggedOut);
 	t.true(addedToHistory.includes('Logged out successfully'));
 });
 
@@ -193,6 +201,7 @@ test('CommandHandler.handleCommand executes exit command', async t => {
 		logAndExit(message: string) {
 			exitMessage = message;
 		},
+		deleteSecret: async () => undefined,
 		usage: {
 			'test-model': {
 				promptTokens: 100,
@@ -216,6 +225,7 @@ test('CommandHandler.handleCommand executes settings command', async t => {
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 		openSettings() {
 			settingsOpened = true;
@@ -235,6 +245,7 @@ test('CommandHandler.handleCommand handles settings command without openSettings
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 
@@ -253,6 +264,7 @@ test('CommandHandler.handleCommand handles command aliases', async t => {
 		logAndExit() {
 			exitCalled = true;
 		},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 
@@ -271,6 +283,7 @@ test('CommandHandler.handleCommand handles unknown command', async t => {
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 
@@ -290,6 +303,7 @@ test('CommandHandler.handleCommand handles case insensitive commands', async t =
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 
@@ -308,6 +322,7 @@ test('CommandHandler.handleCommand trims whitespace from commands', async t => {
 		updateMessages() {},
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		logAndExit() {},
+		deleteSecret: async () => undefined,
 		usage: undefined,
 	};
 

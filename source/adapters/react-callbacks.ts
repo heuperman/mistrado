@@ -6,6 +6,7 @@ import type {
 	ConversationEntry,
 } from '../types/callbacks.js';
 import type {MistralMessage} from '../types/mistral.js';
+import {deleteSecret} from '../services/secrets-service.js';
 
 /**
  * Creates React-compatible conversation callbacks from React state setters.
@@ -60,5 +61,6 @@ export function createReactCommandCallbacks(reactCallbacks: {
 		logAndExit: reactCallbacks.logAndExit,
 		usage: reactCallbacks.usage,
 		openSettings: reactCallbacks.openSettings,
+		deleteSecret,
 	};
 }
