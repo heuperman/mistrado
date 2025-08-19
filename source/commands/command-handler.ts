@@ -1,6 +1,5 @@
 import type {UsageInfo} from '@mistralai/mistralai/models/components/usageinfo.js';
 import type {CommandCallbacks} from '../types/callbacks.js';
-import {deleteSecret} from '../services/secrets-service.js';
 
 const commands = [
 	'exit',
@@ -63,7 +62,7 @@ const commandRegister: Record<
 	async usage({addToHistory, usage}) {
 		addToHistory(formatUsage(usage));
 	},
-	async logout({logAndExit, addToHistory, usage}) {
+	async logout({logAndExit, addToHistory, deleteSecret, usage}) {
 		await deleteSecret('MISTRAL_API_KEY');
 		addToHistory(
 			'Logged out successfully. Please restart the app to enter a new API Key.',

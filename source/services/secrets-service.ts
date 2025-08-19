@@ -18,6 +18,6 @@ export async function setSecret({
 	await keytar.setPassword(serviceName, key, value);
 }
 
-export async function deleteSecret(key: Key): Promise<void> {
+export async function deleteSecret(key: string): Promise<void> {
 	await keytar.deletePassword(serviceName, key);
 }

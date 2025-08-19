@@ -43,4 +43,5 @@ export type CommandCallbacks = {
 	logAndExit: (message: string) => void;
 	usage: Record<string, UsageInfo> | undefined;
 	openSettings?: () => void;
+	deleteSecret: (key: string) => Promise<void>;
 };
