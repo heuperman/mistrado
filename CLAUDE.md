@@ -101,34 +101,32 @@ The app uses a **ToolManager** service (`source/services/tool-manager.ts`) that 
 
 Tool implementations are in `source/tools/` with each tool having its own file (e.g., `edit.ts`, `read.ts`, `grep.ts`, `web-fetch.ts`, `todo-write.ts`).
 
-### Indentation Normalization System
+### File Operations System
 
-The application includes an intelligent indentation normalization system to address current AI model limitations with indentation consistency.
+The edit and multi-edit tools share common file manipulation logic through a centralized utility module.
 
-#### Background & Problem
+#### Shared File Operations Utility (`source/utils/file-operations.ts`)
 
-AI models sometimes provide code snippets with incorrect indentation (e.g., using spaces when the target file uses tabs, or using 2 spaces when the file uses 4 spaces). This causes edit operations to fail because the provided `oldString` doesn't match the file's actual content due to indentation mismatches.
+**Purpose**: Provides a unified, well-tested foundation for all file editing operations across the application.
 
-#### Solution (`source/utils/indentation-normalizer.ts`)
+**Core Functions**:
 
-**Automatic Detection & Conversion**: The system automatically:
-
-1. **Detects** the target file's indentation method (tabs, 2-space, 4-space, 8-space)
-2. **Analyzes** the AI-provided strings for their indentation patterns
-3. **Converts** mismatched indentation to match the target file's format
-4. **Reports** when normalization occurs for transparency
+- **Path Validation**: Ensures file paths are absolute and properly formatted
+- **File Existence**: Validates files exist before attempting operations
+- **File I/O**: Handles reading and writing with proper error handling and UTF-8 encoding
+- **String Replacement**: Performs single and multiple string replacements with regex escaping
+- **Edit Operations**: Complete edit workflows (read → validate → edit → write)
 
 **Key Features**:
 
-- **Smart Detection**: Analyzes file content to determine predominant indentation style
-- **Flexible Conversion**: Handles tabs ↔ spaces and different space sizes (2, 4, 8)
-- **Edge Case Handling**: Manages mixed indentation, empty files, and irregular patterns
-- **Non-Intrusive**: Only normalizes when mismatches are detected
-- **Transparent Reporting**: Shows normalization details in tool output
+- **Consistent Error Handling**: Uniform error messages and validation across all edit tools
+- **Type Safety**: Full TypeScript typing for all operations and return values
+- **Comprehensive Testing**: Isolated testing of core file operations independent of tool interfaces
+- **Reusability**: Shared logic reduces duplication between edit and multi-edit tools
 
-**Integration**: Automatically enabled in `edit` and `multi-edit` tools without user configuration.
-
-**Removal Path**: The logic is cleanly separated in its own utility module, making it easy to remove when AI model capabilities improve and this workaround is no longer needed.
+**Integration**: Both `edit` and `multi-edit` tools use these utilities while maintaining their distinct interfaces:
+- **Edit Tool**: Single operations with uniqueness validation for non-replaceAll operations
+- **Multi-Edit Tool**: Sequential operations on existing files only (no file creation)
 
 ### Todo Management System
 

@@ -1,8 +1,6 @@
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../utils/validation.js';
-import {normalizeIndentation} from '../utils/indentation-normalizer.js';
+import {performFileEdit, type EditOperation} from '../utils/file-operations.js';
 
 export const editTool: Tool = {
 	name: 'Edit',
@@ -56,18 +54,23 @@ export async function handleEditTool(args: unknown) {
 	}
 
 	try {
-		const result = await editFile(
+		const operation: EditOperation = {
+			oldString: validation.data.oldString,
+			newString: validation.data.newString,
+			replaceAll: validation.data.replaceAll ?? false,
+		};
+
+		const result = await performFileEdit(
 			validation.data.filePath,
-			validation.data.oldString,
-			validation.data.newString,
-			validation.data.replaceAll ?? false,
+			operation,
+			true, // Require unique for edit tool
 		);
 
 		return {
 			content: [
 				{
 					type: 'text' as const,
-					text: result,
+					text: result.message,
 				},
 			],
 			isError: false,
@@ -84,102 +87,4 @@ export async function handleEditTool(args: unknown) {
 			isError: true,
 		};
 	}
-}
-
-async function editFile(
-	filePath: string,
-	oldString: string,
-	newString: string,
-	replaceAll: boolean,
-): Promise<string> {
-	// Validate inputs
-	if (!filePath) {
-		throw new Error('file_path is required');
-	}
-
-	if (!oldString) {
-		throw new Error('old_string is required');
-	}
-
-	if (oldString === newString) {
-		throw new Error('new_string must be different from old_string');
-	}
-
-	// Resolve absolute path
-	const absolutePath = path.resolve(filePath);
-
-	try {
-		// Check if file exists
-		await fs.access(absolutePath);
-	} catch {
-		throw new Error(`File not found: ${absolutePath}`);
-	}
-
-	try {
-		// Read file content
-		const content = await fs.readFile(absolutePath, 'utf8');
-
-		// Normalize indentation to match the target file
-		const normalizationResult = normalizeIndentation(
-			oldString,
-			newString,
-			content,
-		);
-		const {normalizedOldString, normalizedNewString} = normalizationResult;
-
-		let newContent: string;
-		let replacementCount = 0;
-
-		if (replaceAll) {
-			// Replace all occurrences
-			const regex = new RegExp(escapeRegExp(normalizedOldString), 'g');
-			const matches = content.match(regex);
-			replacementCount = matches ? matches.length : 0;
-
-			if (replacementCount === 0) {
-				throw new Error(`String not found in file: "${normalizedOldString}"`);
-			}
-
-			newContent = content.replace(regex, normalizedNewString);
-		} else {
-			// Replace single occurrence - must be unique
-			const firstIndex = content.indexOf(normalizedOldString);
-			if (firstIndex === -1) {
-				throw new Error(`String not found in file: "${normalizedOldString}"`);
-			}
-
-			const lastIndex = content.lastIndexOf(normalizedOldString);
-			if (firstIndex !== lastIndex) {
-				throw new Error(
-					`String "${normalizedOldString}" appears multiple times in the file. Use replace_all=true or provide a more specific string with surrounding context to make it unique.`,
-				);
-			}
-
-			newContent = content.replace(normalizedOldString, normalizedNewString);
-			replacementCount = 1;
-		}
-
-		// Write the modified content back to the file
-		await fs.writeFile(absolutePath, newContent, 'utf8');
-
-		const action = replaceAll ? 'replacements' : 'replacement';
-		let result = `Successfully made ${replacementCount} ${action} in ${absolutePath}`;
-
-		// Add normalization details if normalization occurred
-		if (normalizationResult.wasNormalized && normalizationResult.details) {
-			result += `\n(Indentation normalized: ${normalizationResult.details})`;
-		}
-
-		return result;
-	} catch (error) {
-		if (error instanceof Error) {
-			throw error;
-		}
-
-		throw new Error(`Failed to edit file: ${String(error)}`);
-	}
-}
-
-function escapeRegExp(string: string): string {
-	return string.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

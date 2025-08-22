@@ -64,6 +64,54 @@ test('handleReadTool formats output with line numbers', async t => {
 	}
 });
 
+test('handleReadTool handles indentation using spaces', async t => {
+	const temporaryDir = await createTemporaryDir();
+
+	try {
+		const filePath = path.join(temporaryDir, 'numbered.txt');
+		const content = '  Line one\n    Line two\n        Line three';
+
+		// Create test file
+		await fs.writeFile(filePath, content, 'utf8');
+
+		const result = await handleReadTool({
+			filePath,
+		});
+
+		t.false(result.isError);
+		const output = result.content[0].text;
+		t.true(output.includes('     1\t  Line one'));
+		t.true(output.includes('     2\t    Line two'));
+		t.true(output.includes('     3\t        Line three'));
+	} finally {
+		await cleanup(temporaryDir);
+	}
+});
+
+test('handleReadTool handles indentation using tabs', async t => {
+	const temporaryDir = await createTemporaryDir();
+
+	try {
+		const filePath = path.join(temporaryDir, 'numbered.txt');
+		const content = '\tLine one\n\t\tLine two\n\t\t\tLine three';
+
+		// Create test file
+		await fs.writeFile(filePath, content, 'utf8');
+
+		const result = await handleReadTool({
+			filePath,
+		});
+
+		t.false(result.isError);
+		const output = result.content[0].text;
+		t.true(output.includes('     1\t\tLine one'));
+		t.true(output.includes('     2\t\t\tLine two'));
+		t.true(output.includes('     3\t\t\t\tLine three'));
+	} finally {
+		await cleanup(temporaryDir);
+	}
+});
+
 test('handleReadTool handles empty file', async t => {
 	const temporaryDir = await createTemporaryDir();
 

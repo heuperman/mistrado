@@ -1,14 +1,13 @@
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../utils/validation.js';
-import {normalizeIndentation} from '../utils/indentation-normalizer.js';
-
-type EditOperation = {
-	oldString: string;
-	newString: string;
-	replaceAll?: boolean;
-};
+import {
+	validateAbsolutePath,
+	ensureFileExists,
+	readFileContent,
+	writeFileContent,
+	performSingleEdit,
+	type EditOperation,
+} from '../utils/file-operations.js';
 
 type MultiEditArgs = {
 	filePath: string;
@@ -81,97 +80,34 @@ export async function handleMultiEditTool(args: unknown) {
 	try {
 		const {filePath, edits} = validation.data;
 
-		// Check if file path is absolute
-		if (!path.isAbsolute(filePath)) {
-			throw new Error('File path must be absolute (starting with /)');
-		}
+		// Validate file path is absolute
+		validateAbsolutePath(filePath);
 
-		// Read the current file content (or create empty content for new files)
-		let currentContent: string;
-		try {
-			currentContent = await fs.readFile(filePath, 'utf8');
-		} catch (error: any) {
-			if (error.code === 'ENOENT') {
-				// File doesn't exist - this is okay if the first edit creates the file
-				currentContent = '';
-			} else {
-				throw new Error(`Failed to read file: ${error.message}`);
-			}
-		}
+		// Ensure file exists (multi-edit only works on existing files)
+		await ensureFileExists(filePath);
+
+		// Read current file content
+		let currentContent = await readFileContent(filePath);
+		const appliedEdits: string[] = [];
 
 		// Apply edits sequentially
-		let modifiedContent = currentContent;
-		const appliedEdits: string[] = [];
-		const normalizationDetails: string[] = [];
+		for (const [i, edit] of edits.entries()) {
+			const result = performSingleEdit(currentContent, edit, false);
 
-		for (const [i, edit_] of edits.entries()) {
-			const edit = edit_;
-
-			// Validate that oldString and newString are different
-			if (edit.oldString === edit.newString) {
-				throw new Error(
-					`Edit ${i + 1}: oldString and newString cannot be the same`,
-				);
+			if (!result.success) {
+				throw new Error(`Edit ${i + 1}: ${result.error}`);
 			}
 
-			// Normalize indentation for this edit
-			const normalizationResult = normalizeIndentation(
-				edit.oldString,
-				edit.newString,
-				modifiedContent,
-			);
-			const {normalizedOldString, normalizedNewString} = normalizationResult;
-
-			// Track normalization details
-			if (normalizationResult.wasNormalized && normalizationResult.details) {
-				normalizationDetails.push(
-					`Edit ${i + 1}: ${normalizationResult.details}`,
-				);
-			}
-
-			if (edit.replaceAll) {
-				// Replace all occurrences
-				if (!modifiedContent.includes(normalizedOldString)) {
-					throw new Error(`Edit ${i + 1}: oldString not found in file content`);
-				}
-
-				modifiedContent = modifiedContent
-					.split(normalizedOldString)
-					.join(normalizedNewString);
-			} else {
-				// Replace first occurrence only
-				const index = modifiedContent.indexOf(normalizedOldString);
-				if (index === -1) {
-					throw new Error(`Edit ${i + 1}: oldString not found in file content`);
-				}
-
-				modifiedContent =
-					modifiedContent.slice(0, Math.max(0, index)) +
-					normalizedNewString +
-					modifiedContent.slice(
-						Math.max(0, index + normalizedOldString.length),
-					);
-			}
-
+			currentContent = result.message;
 			appliedEdits.push(
 				`Edit ${i + 1}: ${edit.replaceAll ? 'Replaced all' : 'Replaced first'} occurrence of "${edit.oldString.slice(0, 50)}${edit.oldString.length > 50 ? '...' : ''}" with "${edit.newString.slice(0, 50)}${edit.newString.length > 50 ? '...' : ''}"`,
 			);
 		}
 
-		// Ensure the directory exists
-		const dir = path.dirname(filePath);
-		await fs.mkdir(dir, {recursive: true});
-
 		// Write the modified content back to the file
-		await fs.writeFile(filePath, modifiedContent, 'utf8');
+		await writeFileContent(filePath, currentContent);
 
-		// Build result message
-		let result = `Successfully applied ${edits.length} edit(s) to ${filePath}:\n\n${appliedEdits.join('\n')}`;
-
-		// Add normalization details if any occurred
-		if (normalizationDetails.length > 0) {
-			result += `\n\nIndentation normalizations:\n${normalizationDetails.join('\n')}`;
-		}
+		const result = `Successfully applied ${edits.length} edit(s) to ${filePath}:\n\n${appliedEdits.join('\n')}`;
 
 		return {
 			content: [

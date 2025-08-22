@@ -23,6 +23,12 @@ I created this tool because I love the fast, cheap and capable models Mistral pr
 npm install -g mistrado
 ```
 
+### Update
+
+```bash
+npm update -g mistrado
+```
+
 ## Usage
 
 Mistrado operates in two modes:
@@ -108,7 +114,6 @@ These tools enable the AI to analyze code, manage files, explore projects, fetch
 Mistrado is optimized specifically for Mistral models with smart handling for:
 
 - **Tool Call Discovery**: Recognising and executing tool calls, even when included in the response message instead of the tool calls array
-- **Indentation Normalization**: More reliable edit request with smart transformation of incorrect indentation style matching
 - **Retry Strategy Suggestions**: Less tool call looping with specific instructions to not retry failed requests with identical arguments
 
 ## Requirements
