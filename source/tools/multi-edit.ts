@@ -2,7 +2,6 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../utils/validation.js';
-import {normalizeIndentation} from '../utils/indentation-normalizer.js';
 
 type EditOperation = {
 	oldString: string;
@@ -102,10 +101,9 @@ export async function handleMultiEditTool(args: unknown) {
 		// Apply edits sequentially
 		let modifiedContent = currentContent;
 		const appliedEdits: string[] = [];
-		const normalizationDetails: string[] = [];
 
-		for (const [i, edit_] of edits.entries()) {
-			const edit = edit_;
+		for (const [i, edit] of edits.entries()) {
+			const {oldString, newString} = edit;
 
 			// Validate that oldString and newString are different
 			if (edit.oldString === edit.newString) {
@@ -114,43 +112,21 @@ export async function handleMultiEditTool(args: unknown) {
 				);
 			}
 
-			// Normalize indentation for this edit
-			const normalizationResult = normalizeIndentation(
-				edit.oldString,
-				edit.newString,
-				modifiedContent,
-			);
-			const {normalizedOldString, normalizedNewString} = normalizationResult;
-
-			// Track normalization details
-			if (normalizationResult.wasNormalized && normalizationResult.details) {
-				normalizationDetails.push(
-					`Edit ${i + 1}: ${normalizationResult.details}`,
-				);
-			}
-
 			if (edit.replaceAll) {
 				// Replace all occurrences
-				if (!modifiedContent.includes(normalizedOldString)) {
+				if (!modifiedContent.includes(oldString)) {
 					throw new Error(`Edit ${i + 1}: oldString not found in file content`);
 				}
 
-				modifiedContent = modifiedContent
-					.split(normalizedOldString)
-					.join(normalizedNewString);
+				modifiedContent = modifiedContent.split(oldString).join(newString);
 			} else {
 				// Replace first occurrence only
-				const index = modifiedContent.indexOf(normalizedOldString);
+				const index = modifiedContent.indexOf(oldString);
 				if (index === -1) {
 					throw new Error(`Edit ${i + 1}: oldString not found in file content`);
 				}
 
-				modifiedContent =
-					modifiedContent.slice(0, Math.max(0, index)) +
-					normalizedNewString +
-					modifiedContent.slice(
-						Math.max(0, index + normalizedOldString.length),
-					);
+				modifiedContent = modifiedContent.replace(oldString, newString);
 			}
 
 			appliedEdits.push(
@@ -165,13 +141,7 @@ export async function handleMultiEditTool(args: unknown) {
 		// Write the modified content back to the file
 		await fs.writeFile(filePath, modifiedContent, 'utf8');
 
-		// Build result message
-		let result = `Successfully applied ${edits.length} edit(s) to ${filePath}:\n\n${appliedEdits.join('\n')}`;
-
-		// Add normalization details if any occurred
-		if (normalizationDetails.length > 0) {
-			result += `\n\nIndentation normalizations:\n${normalizationDetails.join('\n')}`;
-		}
+		const result = `Successfully applied ${edits.length} edit(s) to ${filePath}:\n\n${appliedEdits.join('\n')}`;
 
 		return {
 			content: [

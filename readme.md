@@ -23,6 +23,12 @@ I created this tool because I love the fast, cheap and capable models Mistral pr
 npm install -g mistrado
 ```
 
+### Update
+
+```bash
+npm update -g mistrado
+```
+
 ## Usage
 
 Mistrado operates in two modes:

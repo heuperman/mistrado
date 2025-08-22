@@ -176,46 +176,6 @@ test('handleMultiEditTool handles multi-line replacements', async t => {
 	}
 });
 
-test('handleMultiEditTool handles indentation normalization across multiple edits', async t => {
-	const temporaryDir = await createTemporaryDir();
-
-	try {
-		const filePath = path.join(temporaryDir, 'test.ts');
-		// File uses tabs for indentation
-		const originalContent =
-			'function test() {\n\tconsole.log("first");\n\tconsole.log("second");\n}';
-
-		// Create test file with tab indentation
-		await fs.writeFile(filePath, originalContent, 'utf8');
-
-		const result = await handleMultiEditTool({
-			filePath,
-			edits: [
-				{
-					// User provides spaces (common AI model behavior)
-					oldString:
-						'function test() {\n    console.log("first");\n    console.log("second");\n}',
-					newString:
-						'function test() {\n    console.log("updated first");\n    console.log("updated second");\n}',
-				},
-			],
-		});
-
-		t.false(result.isError);
-		t.true(result.content[0].text.includes('Successfully applied 1 edit(s)'));
-		t.true(result.content[0].text.includes('Indentation normalizations'));
-
-		// Verify indentation was normalized and replacement worked
-		const fileContent = await fs.readFile(filePath, 'utf8');
-		t.is(
-			fileContent,
-			'function test() {\n\tconsole.log("updated first");\n\tconsole.log("updated second");\n}',
-		);
-	} finally {
-		await cleanup(temporaryDir);
-	}
-});
-
 test('handleMultiEditTool handles empty string replacements', async t => {
 	const temporaryDir = await createTemporaryDir();
 
