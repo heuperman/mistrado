@@ -250,7 +250,6 @@ test('handleToolCalls creates error tool message when tool execution fails', asy
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 	await (conversationService as any).handleToolCalls(
 		toolCalls,
-		[],
 		parameters,
 		callbacks,
 	);

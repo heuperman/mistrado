@@ -125,6 +125,7 @@ The edit and multi-edit tools share common file manipulation logic through a cen
 - **Reusability**: Shared logic reduces duplication between edit and multi-edit tools
 
 **Integration**: Both `edit` and `multi-edit` tools use these utilities while maintaining their distinct interfaces:
+
 - **Edit Tool**: Single operations with uniqueness validation for non-replaceAll operations
 - **Multi-Edit Tool**: Sequential operations on existing files only (no file creation)
 

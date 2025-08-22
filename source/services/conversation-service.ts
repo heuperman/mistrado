@@ -6,9 +6,10 @@ import type {
 	MistralToolCall,
 } from '../types/mistral.js';
 import type {ConversationCallbacks} from '../types/callbacks.js';
-import {formatToolCallDisplay, formatTodoContext} from '../utils/app-utils.js';
+import {formatTodoContext} from '../utils/app-utils.js';
 import type {MistralService} from './mistral-service.js';
 import type {McpManager} from './mcp-manager.js';
+import {ToolExecutionManager} from './tool-execution-manager.js';
 
 type HandleRequestParameters = {
 	service: MistralService;
@@ -18,6 +19,8 @@ type HandleRequestParameters = {
 };
 
 export class ConversationService {
+	private readonly toolExecutionManager = new ToolExecutionManager();
+
 	async handleRequest(
 		parameters: HandleRequestParameters,
 		callbacks: ConversationCallbacks,
@@ -87,7 +90,6 @@ export class ConversationService {
 			if (toolCalls.length > 0) {
 				await this.handleToolCalls(
 					toolCalls,
-					[], // Start with empty array for tool results
 					{
 						service,
 						messages: [...messages, ...updatedMessages],
@@ -252,7 +254,6 @@ export class ConversationService {
 
 	private async handleToolCalls(
 		toolCalls: MistralToolCall[],
-		updatedMessages: MistralMessage[],
 		parameters: HandleRequestParameters,
 		callbacks: ConversationCallbacks,
 	): Promise<void> {
@@ -271,77 +272,15 @@ export class ConversationService {
 				return;
 			}
 
-			const toolCallResults = await Promise.allSettled(
-				toolCalls.map(async toolCall => {
-					let toolEntryId: string | undefined;
-
-					try {
-						if (!toolCall?.function?.name) {
-							throw new Error('Tool call missing function name');
-						}
-
-						toolEntryId = callbacks.onHistoryUpdate({
-							type: 'tool',
-							content: formatToolCallDisplay(
-								toolCall.function.name,
-								toolCall.function.arguments,
-							),
-							status: 'running',
-							toolCallId: toolCall.id,
-						});
-
-						const result = await mcpManager.callTool(toolCall);
-
-						if (!result) {
-							throw new Error('Tool call returned empty result');
-						}
-
-						if (callbacks.onHistoryStatusUpdate) {
-							callbacks.onHistoryStatusUpdate(toolEntryId, 'success');
-						}
-
-						return {success: true, result: result as MistralMessage};
-					} catch (toolError) {
-						const errorMessage =
-							toolError instanceof Error
-								? toolError.message
-								: String(toolError);
-
-						if (callbacks.onHistoryStatusUpdate && toolEntryId !== undefined) {
-							callbacks.onHistoryStatusUpdate(toolEntryId, 'error');
-						}
-
-						callbacks.onError(
-							`Tool ${toolCall.function?.name || 'unknown'} failed: ${errorMessage}`,
-						);
-
-						const errorToolMessage: MistralMessage = {
-							role: 'tool',
-							content: `Error: ${errorMessage}`,
-							toolCallId: toolCall.id ?? '',
-						};
-						return {success: false, result: errorToolMessage};
-					}
-				}),
+			// Execute tool batch using the dedicated manager
+			const executionResult = await this.toolExecutionManager.executeToolBatch(
+				toolCalls,
+				mcpManager,
+				callbacks,
 			);
 
-			// Process tool call results
-			let hasValidResults = false;
-			for (const result of toolCallResults) {
-				if (result.status === 'fulfilled' && result.value.result) {
-					updatedMessages.push(result.value.result);
-					hasValidResults = true;
-				} else if (result.status === 'rejected') {
-					callbacks.onError(
-						`Tool call promise rejected: ${String(result.reason)}`,
-					);
-				}
-			}
-
-			if (!hasValidResults) {
-				callbacks.onError(
-					'All tool calls failed - unable to continue conversation',
-				);
+			if (!executionResult.success) {
+				callbacks.onError(executionResult.error ?? 'Tool execution failed');
 
 				if (callbacks.onLoadingChange) {
 					callbacks.onLoadingChange(false);
@@ -350,21 +289,21 @@ export class ConversationService {
 				return;
 			}
 
-			// Add tool results to the message chain
-			const newMessages = [...updatedMessages];
-			if (callbacks.onMessagesUpdate) {
-				callbacks.onMessagesUpdate(messages => [...messages, ...newMessages]);
-			}
-
 			// Check for interruption before continuing the conversation
 			if (callbacks.onInterruptionCheck?.()) {
 				this.handleInterruption(callbacks, toolCalls);
 				return;
 			}
 
+			// Batch update session messages atomically
+			const {toolResults} = executionResult;
+			if (callbacks.onMessagesUpdate) {
+				callbacks.onMessagesUpdate(messages => [...messages, ...toolResults]);
+			}
+
 			// Continue conversation with tool results
 			await this.handleRequest(
-				{...parameters, messages: [...parameters.messages, ...newMessages]},
+				{...parameters, messages: [...parameters.messages, ...toolResults]},
 				callbacks,
 			);
 		} catch (error) {
@@ -474,10 +413,6 @@ export class ConversationService {
 	private generateInterruptedToolMessages(
 		toolCalls: MistralToolCall[],
 	): MistralMessage[] {
-		return toolCalls.map(toolCall => ({
-			role: 'tool' as const,
-			content: 'Interrupted by user',
-			toolCallId: toolCall.id,
-		}));
+		return this.toolExecutionManager.generateInterruptedToolMessages(toolCalls);
 	}
 }
