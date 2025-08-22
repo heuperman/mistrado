@@ -1,13 +1,13 @@
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../utils/validation.js';
-
-type EditOperation = {
-	oldString: string;
-	newString: string;
-	replaceAll?: boolean;
-};
+import {
+	validateAbsolutePath,
+	ensureFileExists,
+	readFileContent,
+	writeFileContent,
+	performSingleEdit,
+	type EditOperation,
+} from '../utils/file-operations.js';
 
 type MultiEditArgs = {
 	filePath: string;
@@ -80,66 +80,32 @@ export async function handleMultiEditTool(args: unknown) {
 	try {
 		const {filePath, edits} = validation.data;
 
-		// Check if file path is absolute
-		if (!path.isAbsolute(filePath)) {
-			throw new Error('File path must be absolute (starting with /)');
-		}
+		// Validate file path is absolute
+		validateAbsolutePath(filePath);
 
-		// Read the current file content (or create empty content for new files)
-		let currentContent: string;
-		try {
-			currentContent = await fs.readFile(filePath, 'utf8');
-		} catch (error: any) {
-			if (error.code === 'ENOENT') {
-				// File doesn't exist - this is okay if the first edit creates the file
-				currentContent = '';
-			} else {
-				throw new Error(`Failed to read file: ${error.message}`);
-			}
-		}
+		// Ensure file exists (multi-edit only works on existing files)
+		await ensureFileExists(filePath);
 
-		// Apply edits sequentially
-		let modifiedContent = currentContent;
+		// Read current file content
+		let currentContent = await readFileContent(filePath);
 		const appliedEdits: string[] = [];
 
+		// Apply edits sequentially
 		for (const [i, edit] of edits.entries()) {
-			const {oldString, newString} = edit;
+			const result = performSingleEdit(currentContent, edit, false);
 
-			// Validate that oldString and newString are different
-			if (edit.oldString === edit.newString) {
-				throw new Error(
-					`Edit ${i + 1}: oldString and newString cannot be the same`,
-				);
+			if (!result.success) {
+				throw new Error(`Edit ${i + 1}: ${result.error}`);
 			}
 
-			if (edit.replaceAll) {
-				// Replace all occurrences
-				if (!modifiedContent.includes(oldString)) {
-					throw new Error(`Edit ${i + 1}: oldString not found in file content`);
-				}
-
-				modifiedContent = modifiedContent.split(oldString).join(newString);
-			} else {
-				// Replace first occurrence only
-				const index = modifiedContent.indexOf(oldString);
-				if (index === -1) {
-					throw new Error(`Edit ${i + 1}: oldString not found in file content`);
-				}
-
-				modifiedContent = modifiedContent.replace(oldString, newString);
-			}
-
+			currentContent = result.message;
 			appliedEdits.push(
 				`Edit ${i + 1}: ${edit.replaceAll ? 'Replaced all' : 'Replaced first'} occurrence of "${edit.oldString.slice(0, 50)}${edit.oldString.length > 50 ? '...' : ''}" with "${edit.newString.slice(0, 50)}${edit.newString.length > 50 ? '...' : ''}"`,
 			);
 		}
 
-		// Ensure the directory exists
-		const dir = path.dirname(filePath);
-		await fs.mkdir(dir, {recursive: true});
-
 		// Write the modified content back to the file
-		await fs.writeFile(filePath, modifiedContent, 'utf8');
+		await writeFileContent(filePath, currentContent);
 
 		const result = `Successfully applied ${edits.length} edit(s) to ${filePath}:\n\n${appliedEdits.join('\n')}`;
 

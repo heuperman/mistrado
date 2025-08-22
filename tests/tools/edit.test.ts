@@ -243,9 +243,7 @@ test('handleEditTool rejects identical old and new strings', async t => {
 		});
 
 		t.true(result.isError);
-		t.true(
-			result.content[0].text.includes('must be different from old_string'),
-		);
+		t.true(result.content[0].text.includes('cannot be the same'));
 	} finally {
 		await cleanup(temporaryDir);
 	}

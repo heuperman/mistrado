@@ -248,35 +248,19 @@ test('handleMultiEditTool handles Unicode and special characters', async t => {
 	}
 });
 
-test('handleMultiEditTool creates new files when first edit has empty oldString', async t => {
-	const temporaryDir = await createTemporaryDir();
+test('handleMultiEditTool fails when file does not exist', async t => {
+	const result = await handleMultiEditTool({
+		filePath: '/non/existent/file.txt',
+		edits: [
+			{
+				oldString: 'old',
+				newString: 'new',
+			},
+		],
+	});
 
-	try {
-		const filePath = path.join(temporaryDir, 'new-file.txt');
-
-		const result = await handleMultiEditTool({
-			filePath,
-			edits: [
-				{
-					oldString: '',
-					newString: 'Hello, World!\nThis is a new file.',
-				},
-				{
-					oldString: 'World',
-					newString: 'Universe',
-				},
-			],
-		});
-
-		t.false(result.isError);
-		t.true(result.content[0].text.includes('Successfully applied 2 edit(s)'));
-
-		// Verify new file was created with correct content
-		const fileContent = await fs.readFile(filePath, 'utf8');
-		t.is(fileContent, 'Hello, Universe!\nThis is a new file.');
-	} finally {
-		await cleanup(temporaryDir);
-	}
+	t.true(result.isError);
+	t.true(result.content[0].text.includes('File not found'));
 });
 
 test('handleMultiEditTool fails when file path is not absolute', async t => {
@@ -321,7 +305,7 @@ test('handleMultiEditTool fails when string not found in any edit', async t => {
 		t.true(result.isError);
 		t.true(
 			result.content[0].text.includes(
-				'Edit 2: oldString not found in file content',
+				'Edit 2: String not found in file: "nonexistent"',
 			),
 		);
 	} finally {
@@ -486,33 +470,6 @@ test('handleMultiEditTool handles complex sequential edits with mixed replaceAll
 		// Verify complex sequential edits worked
 		const fileContent = await fs.readFile(filePath, 'utf8');
 		t.is(fileContent, 'Updated content with FOO');
-	} finally {
-		await cleanup(temporaryDir);
-	}
-});
-
-test('handleMultiEditTool handles directory creation for new files', async t => {
-	const temporaryDir = await createTemporaryDir();
-
-	try {
-		const filePath = path.join(temporaryDir, 'nested', 'deep', 'new-file.txt');
-
-		const result = await handleMultiEditTool({
-			filePath,
-			edits: [
-				{
-					oldString: '',
-					newString: 'Content in nested directory',
-				},
-			],
-		});
-
-		t.false(result.isError);
-		t.true(result.content[0].text.includes('Successfully applied 1 edit(s)'));
-
-		// Verify directory was created and file exists
-		const fileContent = await fs.readFile(filePath, 'utf8');
-		t.is(fileContent, 'Content in nested directory');
 	} finally {
 		await cleanup(temporaryDir);
 	}
