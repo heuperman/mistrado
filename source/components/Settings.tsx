@@ -10,12 +10,16 @@ type SettingsProps = {
 
 const availableModels = [
 	{
-		description: 'free smaller tool use model with usage limits (default)',
-		value: defaultModel,
+		description: 'smaller tool use model, low cost',
+		value: 'devstral-small-2507',
 	},
 	{
-		description: 'more powerful tool use model',
-		value: 'devstral-medium-latest',
+		description: 'powerful model trained for tool use',
+		value: 'devstral-medium-2507',
+	},
+	{
+		description: 'latest powerful general purpose model',
+		value: 'mistral-medium-2508',
 	},
 ];
 
@@ -23,13 +27,17 @@ export function Settings({onComplete}: SettingsProps) {
 	const [isUpdating, setIsUpdating] = useState(false);
 	const currentModel = getCurrentModel();
 
-	const items = availableModels.map(model => ({
-		...model,
-		label:
-			model.value === currentModel
-				? `${model.value} - ${model.description} (current)`
-				: `${model.value} - ${model.description}`,
-	}));
+	const items = availableModels.map(model => {
+		let label = `${model.value} - ${model.description}`;
+
+		if (model.value === currentModel) {
+			label += ' (current)';
+		} else if (model.value === defaultModel) {
+			label += ' (default)';
+		}
+
+		return {...model, label};
+	});
 
 	const handleSelect = async (item: {label: string; value: string}) => {
 		if (item.value === currentModel) {

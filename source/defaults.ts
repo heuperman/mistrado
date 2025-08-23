@@ -1,1 +1,1 @@
-export const defaultModel = 'devstral-small-latest';
+export const defaultModel = 'mistral-medium-2508';
