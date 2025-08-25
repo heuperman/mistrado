@@ -1,7 +1,13 @@
 import type {UsageInfo} from '@mistralai/mistralai/models/components/index.js';
-import type {MistralMessage} from './mistral.js';
+import type {MistralMessage, MistralToolCall} from './mistral.js';
 
 export type ToolCallStatus = 'running' | 'success' | 'error';
+
+export type ToolPermissionRequest = {
+	toolCall: MistralToolCall;
+	toolName: string;
+	description: string;
+};
 
 export type ConversationEntry = {
 	id: string;
@@ -28,6 +34,9 @@ export type ConversationCallbacks = {
 	onUsageUpdate?: (usage: UsageInfo, model: string) => void;
 	onLoadingChange?: (loading: boolean) => void;
 	onTokenProgress?: (tokens: number) => void;
+	onToolPermissionRequest?: (
+		request: ToolPermissionRequest,
+	) => Promise<boolean>;
 };
 
 /**

@@ -1,5 +1,8 @@
 import type {MistralMessage, MistralToolCall} from '../types/mistral.js';
-import type {ConversationCallbacks} from '../types/callbacks.js';
+import type {
+	ConversationCallbacks,
+	ToolPermissionRequest,
+} from '../types/callbacks.js';
 import {formatToolCallDisplay} from '../utils/app-utils.js';
 import type {McpManager} from './mcp-manager.js';
 
@@ -51,6 +54,31 @@ export class ToolExecutionManager {
 				toolResults: [],
 				error: validationError,
 			};
+		}
+
+		// Request permissions for all tools (if permission callback exists)
+		if (callbacks.onToolPermissionRequest) {
+			// Sequential permission checking is required for fail-fast behavior
+			for (const toolCall of toolCalls) {
+				const permissionRequest = this.createPermissionRequest(
+					toolCall,
+					mcpManager,
+				);
+
+				const approved =
+					// eslint-disable-next-line no-await-in-loop
+					await callbacks.onToolPermissionRequest(permissionRequest);
+
+				if (!approved) {
+					// If any tool is denied, reject all tools in the batch (fail-fast)
+					const rejectionMessages = this.generateRejectionMessages(toolCalls);
+					return {
+						success: false,
+						toolResults: rejectionMessages,
+						error: 'Tool permissions denied by user',
+					};
+				}
+			}
 		}
 
 		// Execute all tool calls
@@ -149,6 +177,41 @@ export class ToolExecutionManager {
 			role: 'tool' as const,
 			content: 'Interrupted by user',
 			toolCallId: toolCall.id,
+		}));
+	}
+
+	/**
+	 * Creates a permission request for a tool call by finding its description
+	 * from the available tools.
+	 */
+	private createPermissionRequest(
+		toolCall: MistralToolCall,
+		mcpManager: McpManager,
+	): ToolPermissionRequest {
+		const availableTools = mcpManager.getAvailableTools();
+		const tool = availableTools.find(
+			t => t.function.name === toolCall.function.name,
+		);
+
+		return {
+			toolCall,
+			toolName: toolCall.function.name,
+			description:
+				tool?.function.description ?? `Execute ${toolCall.function.name} tool`,
+		};
+	}
+
+	/**
+	 * Generates synthetic rejection messages for all tool calls in a batch.
+	 * This is used when any tool in the batch is denied by the user.
+	 */
+	private generateRejectionMessages(
+		toolCalls: MistralToolCall[],
+	): MistralMessage[] {
+		return toolCalls.map(toolCall => ({
+			role: 'tool' as const,
+			content: `User rejected ${toolCall.function.name}`,
+			toolCallId: toolCall.id ?? '',
 		}));
 	}
 }

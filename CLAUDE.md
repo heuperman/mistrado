@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Build**: `npm run build` - Compiles TypeScript to `dist/` directory
 - **Development**: `npm run dev` - Runs TypeScript compiler in watch mode
-- **Test/Lint**: `npm run test` - Runs prettier, xo linter, and ava tests
+- **Test/Lint**: `npm run test` - Runs prettier, xo linter, and ava tests. If you have made changes, run `npm run fix` before running the tests
 - **Fix** `npm run fix` - Runs prettier and xo with flags to fix formatting and linting errors
 
 ## Architecture Overview
@@ -196,6 +196,32 @@ Current todos:
 - **Progress Tracking**: Visual indicators of work completion
 - **Focus Management**: Prevents context loss during complex tasks
 - **User Transparency**: Clear visibility into AI's task planning and execution
+
+### Tool Permission System (Work in Progress)
+
+The application includes a permission system that prompts users before executing tools in interactive mode while maintaining automatic execution in print mode.
+
+#### Current Implementation
+
+**Permission Flow**:
+- When AI requests tool execution, users are prompted individually for each tool
+- **Fail-fast batch strategy**: If any tool in a multi-tool request is denied, all tools are rejected
+- Synthetic rejection messages maintain proper Mistral API conversation structure
+- Print mode continues to auto-execute tools without permission prompts
+
+**Core Components**:
+- **ToolExecutionManager** (`source/services/tool-execution-manager.ts`): Handles permission checking and synthetic message generation
+- **ToolPermission** (`source/components/ToolPermission.tsx`): UI component for Yes/No permission prompts
+- **ConversationService** (`source/services/conversation-service.ts`): Integrates permission flow with conversation handling
+
+**Message Flow Integrity**: The system ensures proper API conversation structure by generating synthetic tool result messages and assistant acknowledgments when tools are denied, preventing API errors from missing tool responses.
+
+#### Planned Enhancements
+
+- **Permission Storage**: Persist user tool permissions across sessions
+- **Permission Management**: Allow users to view and edit stored permissions
+- **Enhanced Information**: Provide more detailed tool information during permission requests (parameters, affected files, etc.)
+- **Batch Permission Options**: Allow users to approve/deny entire tool batches at once
 
 ### Interrupt Handling System
 
