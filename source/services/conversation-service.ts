@@ -280,6 +280,25 @@ export class ConversationService {
 			);
 
 			if (!executionResult.success) {
+				// Add synthetic rejection messages to maintain proper API conversation structure
+				const {toolResults} = executionResult;
+				if (callbacks.onMessagesUpdate && toolResults.length > 0) {
+					callbacks.onMessagesUpdate(messages => [...messages, ...toolResults]);
+				}
+
+				// Add synthetic assistant acknowledgment
+				const assistantMessage: MistralMessage = {
+					role: 'assistant',
+					content: 'Tool permissions denied by user.',
+				};
+
+				if (callbacks.onMessagesUpdate) {
+					callbacks.onMessagesUpdate(messages => [
+						...messages,
+						assistantMessage,
+					]);
+				}
+
 				callbacks.onError(executionResult.error ?? 'Tool execution failed');
 
 				if (callbacks.onLoadingChange) {
