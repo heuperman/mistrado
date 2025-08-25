@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import test, {type ExecutionContext} from 'ava';
 import {getCurrentModel, updateSettings} from '../../source/utils/settings.js';
+import {defaultModel} from '../../source/defaults.js';
 
 type TestContext = ExecutionContext<{
 	mockCwd: string;
@@ -45,7 +46,7 @@ test.afterEach(t => {
 
 test('getCurrentModel returns default model when settings file does not exist', t => {
 	const result = getCurrentModel();
-	t.is(result, 'devstral-small-latest');
+	t.is(result, defaultModel);
 });
 
 test('getCurrentModel returns default model when settings directory does not exist', t => {
@@ -59,7 +60,7 @@ test('getCurrentModel returns default model when settings directory does not exi
 	}
 
 	const result = getCurrentModel(settingsDir);
-	t.is(result, 'devstral-small-latest');
+	t.is(result, defaultModel);
 });
 
 test('getCurrentModel returns model from valid settings file', t => {
@@ -89,7 +90,7 @@ test('getCurrentModel returns default model when settings file contains invalid 
 	fs.writeFileSync(settingsPath, 'invalid json content');
 
 	const result = getCurrentModel(settingsDir);
-	t.is(result, 'devstral-small-latest');
+	t.is(result, defaultModel);
 });
 
 test('getCurrentModel returns default model when settings file is empty', t => {
@@ -104,7 +105,7 @@ test('getCurrentModel returns default model when settings file is empty', t => {
 	fs.writeFileSync(settingsPath, '');
 
 	const result = getCurrentModel(settingsDir);
-	t.is(result, 'devstral-small-latest');
+	t.is(result, defaultModel);
 });
 
 test('getCurrentModel returns default model when settings file has no model property', t => {
@@ -120,7 +121,7 @@ test('getCurrentModel returns default model when settings file has no model prop
 
 	const result = getCurrentModel(settingsDir);
 	// Should return default when model property is missing
-	t.is(result, 'devstral-small-latest');
+	t.is(result, defaultModel);
 });
 
 test('updateSettings creates new settings file when none exists', async t => {
