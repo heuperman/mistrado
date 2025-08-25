@@ -87,7 +87,7 @@ Press **ESC** to quickly stop long-running operations and regain control of the 
 
 ### Model Configuration
 
-By default, Mistrado uses the `devstral-small-latest` model. You can select a different model using the `/settings` command. Settings are only applied to the current project.
+By default, Mistrado uses `mistral-medium-2508`, the latest powerful model from Mistral. You can select a different model using the `/settings` command. Settings are only applied to the current project.
 
 ### Custom Instructions
 

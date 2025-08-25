@@ -5,12 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-08-25
+
+### Changed
+
+- Add more model options and set default model to the latest Mistral Medium, the most capable model
+
 ## [0.2.1] - 2025-08-19
 
 ### Fixed
 
-- Resolved CI pipeline issues that were preventing automated testing and publishing
-- Fixed import errors in case-sensitive environments by standardizing component file naming
+- Resolve CI pipeline issues that were preventing automated testing and publishing
+- Fix import errors in case-sensitive environments by standardizing component file naming
 
 ## [0.2.0] - 2025-08-18
 

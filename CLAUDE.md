@@ -54,7 +54,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 #### Services Layer (Framework-Agnostic Core)
 
 - **ConversationService** (`source/services/conversation-service.ts`): Framework-agnostic conversation engine using generic callback interfaces. Handles AI interactions, tool calling, and conversation flow
-- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `devstral-small-latest`)
+- **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `mistral-medium-2508`)
 - **ToolManager** (`source/services/tool-manager.ts`): Manages built-in tools, handles tool registration and execution
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 
@@ -125,6 +125,7 @@ The edit and multi-edit tools share common file manipulation logic through a cen
 - **Reusability**: Shared logic reduces duplication between edit and multi-edit tools
 
 **Integration**: Both `edit` and `multi-edit` tools use these utilities while maintaining their distinct interfaces:
+
 - **Edit Tool**: Single operations with uniqueness validation for non-replaceAll operations
 - **Multi-Edit Tool**: Sequential operations on existing files only (no file creation)
 
