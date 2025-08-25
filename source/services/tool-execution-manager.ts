@@ -19,6 +19,18 @@ export type ToolExecutionResult = {
  */
 export class ToolExecutionManager {
 	/**
+	 * Tools that are considered safe and don't require permission prompts.
+	 * These tools only read data or manage internal state without external effects.
+	 */
+	private readonly safeTools = new Set([
+		'Glob',
+		'Grep',
+		'List',
+		'Read',
+		'TodoWrite',
+	]);
+
+	/**
 	 * Validates that all tool calls have the required properties
 	 */
 	validateToolCalls(toolCalls: MistralToolCall[]): string | undefined {
@@ -56,10 +68,14 @@ export class ToolExecutionManager {
 			};
 		}
 
-		// Request permissions for all tools (if permission callback exists)
+		// Request permissions for unsafe tools only (if permission callback exists)
 		if (callbacks.onToolPermissionRequest) {
+			const unsafeToolCalls = toolCalls.filter(
+				toolCall => !this.safeTools.has(toolCall.function.name),
+			);
+
 			// Sequential permission checking is required for fail-fast behavior
-			for (const toolCall of toolCalls) {
+			for (const toolCall of unsafeToolCalls) {
 				const permissionRequest = this.createPermissionRequest(
 					toolCall,
 					mcpManager,

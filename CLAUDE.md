@@ -204,8 +204,10 @@ The application includes a permission system that prompts users before executing
 #### Current Implementation
 
 **Permission Flow**:
-- When AI requests tool execution, users are prompted individually for each tool
-- **Fail-fast batch strategy**: If any tool in a multi-tool request is denied, all tools are rejected
+- When AI requests tool execution, users are prompted individually for each **unsafe** tool
+- **Safe Tool Allowlist**: Read-only tools (`glob`, `grep`, `ls`, `read`, `todo-write`) execute without permission prompts
+- **Fail-fast batch strategy**: If any unsafe tool in a multi-tool request is denied, all tools are rejected
+- **Allowlist Design**: New tools automatically require permissions unless explicitly added to the safe list
 - Synthetic rejection messages maintain proper Mistral API conversation structure
 - Print mode continues to auto-execute tools without permission prompts
 
