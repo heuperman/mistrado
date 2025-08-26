@@ -11,6 +11,7 @@ import type {MistralMessage} from '../types/mistral.js';
 import type {
 	ConversationEntry,
 	ToolPermissionRequest,
+	PermissionDecision,
 } from '../types/callbacks.js';
 
 export function useAppState() {
@@ -36,7 +37,7 @@ export function useAppState() {
 		ToolPermissionRequest | undefined
 	>();
 	const [permissionResolver, setPermissionResolver] = useState<
-		((approved: boolean) => void) | undefined
+		((decision: PermissionDecision) => void) | undefined
 	>();
 
 	// Initialize Mistral client
@@ -175,7 +176,7 @@ export function useAppState() {
 
 	const requestToolPermission = async (
 		request: ToolPermissionRequest,
-	): Promise<boolean> => {
+	): Promise<PermissionDecision> => {
 		return new Promise(resolve => {
 			// Turn off loading while requesting permission
 			setIsLoading(false);
@@ -184,15 +185,15 @@ export function useAppState() {
 		});
 	};
 
-	const handlePermissionDecision = (approved: boolean) => {
+	const handlePermissionDecision = (decision: PermissionDecision) => {
 		setPendingPermission(undefined);
 		if (permissionResolver) {
-			permissionResolver(approved);
+			permissionResolver(decision);
 			setPermissionResolver(undefined);
 		}
 
 		// Resume loading if approved (will be handled by conversation service)
-		if (approved) {
+		if (decision !== 'deny') {
 			setIsLoading(true);
 		}
 	};

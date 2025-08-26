@@ -5,6 +5,7 @@ import type {
 } from '../types/callbacks.js';
 import {formatToolCallDisplay} from '../utils/app-utils.js';
 import type {McpManager} from './mcp-manager.js';
+import {PermissionStorage} from './permission-storage.js';
 
 export type ToolExecutionResult = {
 	success: boolean;
@@ -29,6 +30,8 @@ export class ToolExecutionManager {
 		'Read',
 		'TodoWrite',
 	]);
+
+	private readonly permissionStorage = new PermissionStorage();
 
 	/**
 	 * Validates that all tool calls have the required properties
@@ -74,18 +77,23 @@ export class ToolExecutionManager {
 				toolCall => !this.safeTools.has(toolCall.function.name),
 			);
 
+			// Filter out tools that already have session permissions
+			const toolsNeedingPermission = unsafeToolCalls.filter(
+				toolCall => !this.permissionStorage.hasSessionPermission(toolCall),
+			);
+
 			// Sequential permission checking is required for fail-fast behavior
-			for (const toolCall of unsafeToolCalls) {
+			for (const toolCall of toolsNeedingPermission) {
 				const permissionRequest = this.createPermissionRequest(
 					toolCall,
 					mcpManager,
 				);
 
-				const approved =
+				const result =
 					// eslint-disable-next-line no-await-in-loop
 					await callbacks.onToolPermissionRequest(permissionRequest);
 
-				if (!approved) {
+				if (result === 'deny') {
 					// If any tool is denied, reject all tools in the batch (fail-fast)
 					const rejectionMessages = this.generateRejectionMessages(toolCalls);
 					return {
@@ -93,6 +101,11 @@ export class ToolExecutionManager {
 						toolResults: rejectionMessages,
 						error: 'Tool permissions denied by user',
 					};
+				}
+
+				// Store session permission if user chose session-level approval
+				if (result === 'session') {
+					this.permissionStorage.storeSessionPermission(toolCall, true);
 				}
 			}
 		}
@@ -194,6 +207,13 @@ export class ToolExecutionManager {
 			content: 'Interrupted by user',
 			toolCallId: toolCall.id,
 		}));
+	}
+
+	/**
+	 * Clears all session permissions. Called when session ends.
+	 */
+	clearSessionPermissions(): void {
+		this.permissionStorage.clearSessionPermissions();
 	}
 
 	/**

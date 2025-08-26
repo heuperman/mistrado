@@ -204,6 +204,7 @@ The application includes a permission system that prompts users before executing
 #### Current Implementation
 
 **Permission Flow**:
+
 - When AI requests tool execution, users are prompted individually for each **unsafe** tool
 - **Safe Tool Allowlist**: Read-only tools (`glob`, `grep`, `ls`, `read`, `todo-write`) execute without permission prompts
 - **Fail-fast batch strategy**: If any unsafe tool in a multi-tool request is denied, all tools are rejected
@@ -212,6 +213,7 @@ The application includes a permission system that prompts users before executing
 - Print mode continues to auto-execute tools without permission prompts
 
 **Core Components**:
+
 - **ToolExecutionManager** (`source/services/tool-execution-manager.ts`): Handles permission checking and synthetic message generation
 - **ToolPermission** (`source/components/ToolPermission.tsx`): UI component for Yes/No permission prompts
 - **ConversationService** (`source/services/conversation-service.ts`): Integrates permission flow with conversation handling

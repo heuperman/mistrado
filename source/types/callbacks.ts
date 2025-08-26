@@ -3,6 +3,8 @@ import type {MistralMessage, MistralToolCall} from './mistral.js';
 
 export type ToolCallStatus = 'running' | 'success' | 'error';
 
+export type PermissionDecision = 'once' | 'session' | 'deny';
+
 export type ToolPermissionRequest = {
 	toolCall: MistralToolCall;
 	toolName: string;
@@ -36,7 +38,7 @@ export type ConversationCallbacks = {
 	onTokenProgress?: (tokens: number) => void;
 	onToolPermissionRequest?: (
 		request: ToolPermissionRequest,
-	) => Promise<boolean>;
+	) => Promise<PermissionDecision>;
 };
 
 /**

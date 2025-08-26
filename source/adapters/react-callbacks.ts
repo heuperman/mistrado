@@ -5,6 +5,7 @@ import type {
 	CommandCallbacks,
 	ConversationEntry,
 	ToolPermissionRequest,
+	PermissionDecision,
 } from '../types/callbacks.js';
 import type {MistralMessage} from '../types/mistral.js';
 import {deleteSecret} from '../services/secrets-service.js';
@@ -24,7 +25,9 @@ export function createReactConversationCallbacks(reactCallbacks: {
 	updateTokenCount?: (tokens: number) => void;
 	checkInterruption?: () => boolean;
 	createAbortController: () => AbortController;
-	requestToolPermission?: (request: ToolPermissionRequest) => Promise<boolean>;
+	requestToolPermission?: (
+		request: ToolPermissionRequest,
+	) => Promise<PermissionDecision>;
 }): ConversationCallbacks {
 	return {
 		onError(error) {
