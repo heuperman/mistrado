@@ -217,12 +217,15 @@ The application includes a comprehensive permission system that prompts users be
 #### Permission Flow
 
 **Safe Tool Allowlist**: Read-only tools execute without permission prompts:
+
 - `glob`, `grep`, `ls`, `read`, `todo-write`, `web-fetch` (read-only operations)
 
 **Unsafe Tool Processing**: Write operations require user permission:
+
 - `edit`, `multi-edit`, `write` and other tools that modify the system
 
 **Permission Options**: Users can choose from two permission levels:
+
 - **Just this time**: Allow tool execution once
 - **For this session**: Allow tool for the duration of the current session
 
@@ -231,16 +234,19 @@ The application includes a comprehensive permission system that prompts users be
 #### Implementation Details
 
 **Permission Storage**:
+
 - Session-based permissions stored in memory only
 - No persistent storage across application restarts
 - Clean slate for each new session
 
-**Message Flow Integrity**: 
+**Message Flow Integrity**:
+
 - Generates synthetic tool result messages for denied tools to maintain proper Mistral API conversation structure
 - Creates synthetic assistant acknowledgments when tools are rejected
 - Ensures every tool call has a corresponding tool result to prevent API errors
 
 **Mode Behavior**:
+
 - **Interactive Mode**: Full permission prompts with UI components
 - **Print Mode**: Auto-executes all tools without prompts (preserves UNIX tool behavior)
 
