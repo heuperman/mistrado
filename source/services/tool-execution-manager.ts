@@ -77,36 +77,20 @@ export class ToolExecutionManager {
 				toolCall => !this.safeTools.has(toolCall.function.name),
 			);
 
-			// Filter out tools that already have session permissions
-			const toolsNeedingPermission = unsafeToolCalls.filter(
-				toolCall => !this.permissionStorage.hasSessionPermission(toolCall),
-			);
+			// Filter out tools that already have session or persistent permissions
+			const toolsNeedingPermission =
+				await this.filterToolsNeedingPermission(unsafeToolCalls);
 
 			// Sequential permission checking is required for fail-fast behavior
-			for (const toolCall of toolsNeedingPermission) {
-				const permissionRequest = this.createPermissionRequest(
-					toolCall,
-					mcpManager,
-				);
+			const permissionResult = await this.requestPermissions(
+				toolsNeedingPermission,
+				toolCalls,
+				mcpManager,
+				callbacks,
+			);
 
-				const result =
-					// eslint-disable-next-line no-await-in-loop
-					await callbacks.onToolPermissionRequest(permissionRequest);
-
-				if (result === 'deny') {
-					// If any tool is denied, reject all tools in the batch (fail-fast)
-					const rejectionMessages = this.generateRejectionMessages(toolCalls);
-					return {
-						success: false,
-						toolResults: rejectionMessages,
-						error: 'Tool permissions denied by user',
-					};
-				}
-
-				// Store session permission if user chose session-level approval
-				if (result === 'session') {
-					this.permissionStorage.storeSessionPermission(toolCall, true);
-				}
+			if (!permissionResult.success) {
+				return permissionResult;
 			}
 		}
 
@@ -249,5 +233,71 @@ export class ToolExecutionManager {
 			content: `User rejected ${toolCall.function.name}`,
 			toolCallId: toolCall.id ?? '',
 		}));
+	}
+
+	/**
+	 * Filters tools to find those that need permission requests.
+	 */
+	private async filterToolsNeedingPermission(
+		toolCalls: MistralToolCall[],
+	): Promise<MistralToolCall[]> {
+		const permissionChecks = await Promise.all(
+			toolCalls.map(async toolCall => ({
+				toolCall,
+				hasPermission: await this.permissionStorage.hasPermission(toolCall),
+			})),
+		);
+
+		return permissionChecks
+			.filter(check => !check.hasPermission)
+			.map(check => check.toolCall);
+	}
+
+	/**
+	 * Requests permissions for tools and handles responses.
+	 */
+	private async requestPermissions(
+		toolsNeedingPermission: MistralToolCall[],
+		allToolCalls: MistralToolCall[],
+		mcpManager: McpManager,
+		callbacks: ConversationCallbacks,
+	): Promise<ToolExecutionResult> {
+		// Sequential processing is required for fail-fast behavior on denial
+		for (const toolCall of toolsNeedingPermission) {
+			const permissionRequest = this.createPermissionRequest(
+				toolCall,
+				mcpManager,
+			);
+
+			const result =
+				// eslint-disable-next-line no-await-in-loop
+				await callbacks.onToolPermissionRequest!(permissionRequest);
+
+			if (result === 'deny') {
+				const rejectionMessages = this.generateRejectionMessages(allToolCalls);
+				return {
+					success: false,
+					toolResults: rejectionMessages,
+					error: 'Tool permissions denied by user',
+				};
+			}
+
+			// eslint-disable-next-line no-await-in-loop
+			await this.storePermissionDecision(toolCall, result);
+		}
+
+		return {success: true, toolResults: []};
+	}
+
+	/**
+	 * Stores permission decision based on user choice.
+	 */
+	private async storePermissionDecision(
+		toolCall: MistralToolCall,
+		decision: 'once' | 'session',
+	): Promise<void> {
+		if (decision === 'session') {
+			this.permissionStorage.storeSessionPermission(toolCall, true);
+		}
 	}
 }

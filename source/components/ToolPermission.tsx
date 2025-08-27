@@ -1,3 +1,5 @@
+import path from 'node:path';
+import process from 'node:process';
 import React, {useCallback} from 'react';
 import {Box, Text} from 'ink';
 import SelectInput from 'ink-select-input';
@@ -5,6 +7,7 @@ import type {
 	ToolPermissionRequest,
 	PermissionDecision,
 } from '../types/callbacks.js';
+import Markdown from './Markdown.js';
 
 type ToolPermissionProps = {
 	readonly request: ToolPermissionRequest;
@@ -25,11 +28,21 @@ const formatToolContext = (
 
 		switch (toolName) {
 			case 'edit':
-			case 'multiedit': {
+			case 'multiedit':
+			case 'write': {
 				const filePath = args['filePath'] as string;
+				if (filePath) {
+					const relativePath = path.relative(process.cwd(), filePath);
+					const action = toolName === 'write' ? 'create or overwrite' : 'edit';
+					return {
+						context: relativePath,
+						details: `Do you want to allow Mistrado to ${action} **${relativePath}**?`,
+					};
+				}
+
 				return {
-					context: `File: ${filePath}`,
-					details: 'This tool will modify file contents',
+					context: 'No file path provided',
+					details: 'Do you want to allow Mistrado to modify files?',
 				};
 			}
 
@@ -38,13 +51,14 @@ const formatToolContext = (
 				try {
 					const domain = new URL(url).hostname;
 					return {
-						context: `Domain: ${domain}`,
-						details: `URL: ${url}`,
+						context: url,
+						details: `Do you want to allow Mistrado to fetch content from **${domain}**?`,
 					};
 				} catch {
 					return {
-						context: `URL: ${url}`,
-						details: 'This tool will fetch web content',
+						context: url || 'No URL provided',
+						details:
+							'Do you want to allow Mistrado to fetch content from this URL?',
 					};
 				}
 			}
@@ -53,16 +67,8 @@ const formatToolContext = (
 				const command = args['command'] as string;
 				const firstCommand = command.split(/\s+/)[0];
 				return {
-					context: `Command: ${firstCommand}`,
-					details: `Full command: ${command}`,
-				};
-			}
-
-			case 'write': {
-				const filePath = args['filePath'] as string;
-				return {
-					context: `File: ${filePath}`,
-					details: 'This tool will create or overwrite a file',
+					context: command ?? 'No command provided',
+					details: `Do you want to allow Mistrado to run **${firstCommand}**`,
 				};
 			}
 
@@ -77,7 +83,7 @@ const formatToolContext = (
 
 				return {
 					context: keyArgs || 'No parameters',
-					details: '',
+					details: `Do you want to allow Mistrado to use the tool **${toolName}**?`,
 				};
 			}
 		}
@@ -96,17 +102,24 @@ export default function ToolPermission({
 	const {toolName} = request;
 	const {context, details} = formatToolContext(request.toolCall);
 
+	const isFileOperation = ['edit', 'multiedit', 'write'].includes(
+		toolName.toLowerCase(),
+	);
+	const sessionLabel = isFileOperation
+		? 'Yes, allow all file edits for this session'
+		: `Yes, allow ${toolName} requests for this session`;
+
 	const items = [
 		{
-			label: 'Allow once',
+			label: 'Yes, allow once',
 			value: 'once' as PermissionDecision,
 		},
 		{
-			label: 'Allow for this session',
+			label: sessionLabel,
 			value: 'session' as PermissionDecision,
 		},
 		{
-			label: 'Deny',
+			label: 'No',
 			value: 'deny' as PermissionDecision,
 		},
 	];
@@ -119,24 +132,21 @@ export default function ToolPermission({
 	);
 
 	return (
-		<Box flexDirection="column" paddingX={2} gap={1}>
-			<Box
-				flexDirection="column"
-				borderStyle="round"
-				borderColor="yellow"
-				padding={1}
-			>
-				<Text bold color="yellow">
-					🔒 Permission Request: {toolName}
-				</Text>
-				<Box flexDirection="column" gap={1}>
-					<Text color="cyan">{context}</Text>
-					{details ? <Text color="grey">{details}</Text> : null}
-				</Box>
-				<Box flexDirection="column" gap={1}>
-					<Text>Options:</Text>
-					<SelectInput items={items} onSelect={handleSelect} />
-				</Box>
+		<Box
+			flexDirection="column"
+			borderStyle="round"
+			borderColor="yellow"
+			paddingX={1}
+		>
+			<Text bold color="yellow">
+				{toolName}
+			</Text>
+			<Box flexDirection="column" padding={1}>
+				<Text>{context}</Text>
+			</Box>
+			<Box flexDirection="column">
+				{details ? <Markdown>{details}</Markdown> : null}
+				<SelectInput items={items} onSelect={handleSelect} />
 			</Box>
 		</Box>
 	);

@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import process from 'node:process';
 
 export type EditOperation = {
 	oldString: string;
@@ -24,6 +25,21 @@ export type EditResult =
 export function validateAbsolutePath(filePath: string): void {
 	if (!path.isAbsolute(filePath)) {
 		throw new Error('File path must be absolute, not relative');
+	}
+}
+
+/**
+ * Checks if a file path is restricted from AI modification
+ */
+export function validateNotRestrictedFile(filePath: string): void {
+	const resolvedPath = path.resolve(filePath);
+	const workingDir = process.cwd();
+
+	// Block access to .mistrado/settings.json to prevent AI self-modification
+	const settingsPath = path.resolve(workingDir, '.mistrado', 'settings.json');
+
+	if (resolvedPath === settingsPath) {
+		throw new Error('Access to Mistrado settings file is restricted');
 	}
 }
 
@@ -146,6 +162,7 @@ export async function performFileEdit(
 	requireUnique = false,
 ): Promise<{replacementCount: number; message: string}> {
 	validateAbsolutePath(filePath);
+	validateNotRestrictedFile(filePath);
 
 	const absolutePath = path.resolve(filePath);
 

@@ -1,11 +1,10 @@
+import path from 'node:path';
 import type {MistralToolCall} from '../types/mistral.js';
 
 export type PermissionLevel = 'once' | 'session' | 'deny';
 
 /**
- * Manages tool permissions with session-level storage.
- * Phase 1: In-memory storage only. Interface designed for easy addition
- * of file-based persistence in future phases.
+ * Manages tool permissions with session-level storage and persistent file operations.
  */
 export class PermissionStorage {
 	private readonly sessionPermissions = new Map<string, boolean>();
@@ -41,8 +40,19 @@ export class PermissionStorage {
 	}
 
 	/**
+	 * Checks if a tool call has session permission.
+	 */
+	async hasPermission(toolCall: MistralToolCall): Promise<boolean> {
+		// First check session permissions
+		if (this.hasSessionPermission(toolCall)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Generates a unique permission key for a tool call.
-	 * Different tools use different key generation strategies.
 	 */
 	private generatePermissionKey(toolCall: MistralToolCall): string {
 		const toolName = toolCall.function.name.toLowerCase();
@@ -50,10 +60,15 @@ export class PermissionStorage {
 
 		switch (toolName) {
 			case 'edit':
-			case 'multiedit': {
-				// Permission based on absolute file path
+			case 'multiedit':
+			case 'write': {
 				const filePath = args['filePath'] as string;
-				return `edit:${filePath}`;
+				if (filePath) {
+					const directory = path.dirname(path.resolve(filePath));
+					return `fileops:${directory}`;
+				}
+
+				return `${toolName}:unknown`;
 			}
 
 			case 'webfetch': {
@@ -69,16 +84,12 @@ export class PermissionStorage {
 			}
 
 			case 'bash': {
-				// Permission based on command (first word only for security)
+				// Permission based on base command + first argument
 				const command = args['command'] as string;
-				const firstCommand = command.split(/\s+/)[0];
-				return `bash:${firstCommand}`;
-			}
-
-			case 'write': {
-				// Permission based on file path
-				const filePath = args['filePath'] as string;
-				return `write:${filePath}`;
+				const parts = command.split(/\s+/);
+				const commandKey =
+					parts.length >= 2 ? `${parts[0]} ${parts[1]}` : parts[0];
+				return `bash:${commandKey}`;
 			}
 
 			default: {

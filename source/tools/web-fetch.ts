@@ -10,7 +10,8 @@ export const webFetchTool: Tool = {
 		properties: {
 			url: {
 				type: 'string',
-				description: 'The URL to fetch content from (must be HTTP or HTTPS)',
+				description:
+					'The URL to fetch content from. Must include protocol. For example: https://example.com',
 			},
 			timeout: {
 				type: 'number',

@@ -2,6 +2,7 @@ import {promises as fs} from 'node:fs';
 import {dirname} from 'node:path';
 import type {Tool} from '@modelcontextprotocol/sdk/types.js';
 import {validateSchema} from '../utils/validation.js';
+import {validateNotRestrictedFile} from '../utils/file-operations.js';
 
 export const writeTool: Tool = {
 	name: 'Write',
@@ -51,6 +52,9 @@ export async function handleWriteTool(args: unknown) {
 		) {
 			throw new Error('File path must be absolute, not relative');
 		}
+
+		// Validate that the file is not restricted
+		validateNotRestrictedFile(validation.data.filePath);
 
 		// Ensure the directory exists
 		const dir = dirname(validation.data.filePath);
