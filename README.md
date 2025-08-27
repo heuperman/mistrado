@@ -4,14 +4,15 @@ Mistrado is a terminal-based coding assistant powered by Mistral's AI model, (he
 
 I created this tool because I love the fast, cheap and capable models Mistral provides. I also love Claude Code for its excellent product features. This is my attempt to combine the two and encourage Mistral to create their own CLI tool by showing what is possible.
 
-> [!CAUTION]
-> Mistrado does not have manual tool call confirmation support yet. Tool calls requested by the model will be executed without notice. This tool can delete and rewrite local files. Use at your own risk.
+> [!NOTE]
+> Mistrado includes a permission system that prompts you before executing file modification tools. Read-only operations (like viewing files or searching) execute automatically, while write operations require your approval.
 
 ## Features
 
 - **Dual Mode Operation**: Interactive terminal UI for conversations and UNIX-standard CLI tool for scripting
 - **Interactive Terminal UI**: Clean, responsive chat interface built with Ink and React
 - **UNIX Tool Mode**: Standard CLI tool with stdin/stdout support for automation and scripting
+- **Tool Permission System**: Interactive prompts for file modification operations with session-based approval options
 - **Session Management**: Persistent conversation history during interactive sessions
 - **Built-in Tools**: Comprehensive filesystem operations, search capabilities, and task management
 - **Secure API Key Storage**: Uses system keychain for secure credential management
@@ -85,6 +86,8 @@ mistrado -v
 
 Press **ESC** to quickly stop long-running operations and regain control of the interface.
 
+**Tool Permissions**: Mistrado will ask for permission before executing file modification tools like `write`, `edit`, or `multi-edit`. You can approve tools individually or for the entire session. Read-only tools execute automatically.
+
 ### Model Configuration
 
 By default, Mistrado uses `mistral-medium-2508`, the latest powerful model from Mistral. You can select a different model using the `/settings` command. Settings are only applied to the current project.
@@ -106,8 +109,12 @@ Mistrado includes comprehensive tools that enable the AI to work with your codeb
 
 These tools enable the AI to analyze code, manage files, explore projects, fetch web content, and organize complex tasks.
 
-> [!CAUTION]
-> Tool calls requested by the model will be executed without notice. For safety reasons there is no `bash` tool included or option to add your own MCP servers yet.
+**Safety Features**:
+
+- **Permission System**: Interactive mode prompts for approval before file modifications
+- **Safe Tool Allowlist**: Read-only operations (`read`, `grep`, `glob`, `ls`, `todo-write`, `webfetch`) execute without prompts
+- **UNIX Mode**: Print mode auto-executes all tools for scripting compatibility
+- **No Shell Access**: No `bash` tool included for security
 
 ## Model Optimizations
 
@@ -149,7 +156,6 @@ MIT
 
 Upcoming features to make Mistrado even better:
 
-- Permission management for tool calls
 - Bash tool for executing shell commands
 - Git diffs for edit operations
 - File reference command
