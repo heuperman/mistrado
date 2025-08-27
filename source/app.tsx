@@ -5,6 +5,7 @@ import Login from './components/Login.js';
 import Conversation from './components/Conversation.js';
 import {Settings} from './components/Settings.js';
 import Hero from './components/Hero.js';
+import ToolPermission from './components/ToolPermission.js';
 import {useAppState} from './hooks/use-app-state.js';
 import {useSignalHandler} from './hooks/use-signal-handler.js';
 import {CommandHandler} from './commands/command-handler.js';
@@ -35,6 +36,7 @@ export default function App({initialPrompt}: AppProps = {}) {
 		shouldExit,
 		currentTokenCount,
 		showSettings,
+		pendingPermission,
 		setApiKey,
 		setPrompt,
 		setIsLoading,
@@ -49,6 +51,8 @@ export default function App({initialPrompt}: AppProps = {}) {
 		resetTokenCount,
 		openSettings,
 		closeSettings,
+		requestToolPermission,
+		handlePermissionDecision,
 	} = useAppState();
 
 	const isInterruptedRef = React.useRef(false);
@@ -147,6 +151,7 @@ export default function App({initialPrompt}: AppProps = {}) {
 						abortControllerRef.current = controller;
 						return controller;
 					},
+					requestToolPermission,
 				});
 
 				try {
@@ -186,6 +191,7 @@ export default function App({initialPrompt}: AppProps = {}) {
 			updateHistoryStatus,
 			updateUsage,
 			updateTokenCount,
+			requestToolPermission,
 		],
 	);
 
@@ -214,6 +220,24 @@ export default function App({initialPrompt}: AppProps = {}) {
 						addToHistory({type: 'command', content: message});
 						closeSettings();
 					}}
+				/>
+			</Box>
+		);
+	}
+
+	if (pendingPermission) {
+		return (
+			<Box width="100%" flexDirection="column" gap={1}>
+				<Hero />
+				<Conversation
+					history={conversationHistory}
+					isLoading={false}
+					errorOutput={errorOutput}
+					currentTokenCount={currentTokenCount}
+				/>
+				<ToolPermission
+					request={pendingPermission}
+					onDecision={handlePermissionDecision}
 				/>
 			</Box>
 		);

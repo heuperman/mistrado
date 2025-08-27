@@ -8,7 +8,11 @@ import {getMainSystemPrompt} from '../prompts/system.js';
 import {isGitRepo} from '../utils/git.js';
 import {loadCustomInstruction} from '../utils/custom-instructions.js';
 import type {MistralMessage} from '../types/mistral.js';
-import type {ConversationEntry} from '../types/callbacks.js';
+import type {
+	ConversationEntry,
+	ToolPermissionRequest,
+	PermissionDecision,
+} from '../types/callbacks.js';
 
 export function useAppState() {
 	const [mistralService, setMistralService] = useState<
@@ -29,6 +33,12 @@ export function useAppState() {
 	const [shouldExit, setShouldExit] = useState(false);
 	const [currentTokenCount, setCurrentTokenCount] = useState(0);
 	const [showSettings, setShowSettings] = useState(false);
+	const [pendingPermission, setPendingPermission] = useState<
+		ToolPermissionRequest | undefined
+	>();
+	const [permissionResolver, setPermissionResolver] = useState<
+		((decision: PermissionDecision) => void) | undefined
+	>();
 
 	// Initialize Mistral client
 	useEffect(() => {
@@ -164,6 +174,30 @@ export function useAppState() {
 		setShowSettings(false);
 	};
 
+	const requestToolPermission = async (
+		request: ToolPermissionRequest,
+	): Promise<PermissionDecision> => {
+		return new Promise(resolve => {
+			// Turn off loading while requesting permission
+			setIsLoading(false);
+			setPendingPermission(request);
+			setPermissionResolver(() => resolve);
+		});
+	};
+
+	const handlePermissionDecision = (decision: PermissionDecision) => {
+		setPendingPermission(undefined);
+		if (permissionResolver) {
+			permissionResolver(decision);
+			setPermissionResolver(undefined);
+		}
+
+		// Resume loading if approved (will be handled by conversation service)
+		if (decision !== 'deny') {
+			setIsLoading(true);
+		}
+	};
+
 	return {
 		// State
 		mistralService,
@@ -178,6 +212,7 @@ export function useAppState() {
 		shouldExit,
 		currentTokenCount,
 		showSettings,
+		pendingPermission,
 		// Setters
 		setApiKey,
 		setPrompt,
@@ -194,5 +229,7 @@ export function useAppState() {
 		resetTokenCount,
 		openSettings,
 		closeSettings,
+		requestToolPermission,
+		handlePermissionDecision,
 	};
 }

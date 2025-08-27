@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Build**: `npm run build` - Compiles TypeScript to `dist/` directory
 - **Development**: `npm run dev` - Runs TypeScript compiler in watch mode
-- **Test/Lint**: `npm run test` - Runs prettier, xo linter, and ava tests
+- **Test/Lint**: `npm run test` - Runs prettier, xo linter, and ava tests. If you have made changes, run `npm run fix` before running the tests
 - **Fix** `npm run fix` - Runs prettier and xo with flags to fix formatting and linting errors
 
 ## Architecture Overview
@@ -28,9 +28,10 @@ The app initializes two main systems concurrently:
 When users submit prompts, the app:
 
 1. Sends message + available tools to Mistral API
-2. If AI responds with tool calls, executes them via Tool Manager
-3. Returns tool results to continue the conversation
-4. Displays responses (streaming in interactive mode, final output in print mode)
+2. If AI responds with tool calls, checks permissions via ToolExecutionManager
+3. Executes approved tools via ToolManager (or generates synthetic rejections for denied tools)
+4. Returns tool results to continue the conversation
+5. Displays responses (streaming in interactive mode, final output in print mode)
 
 ### Modular Architecture
 
@@ -45,6 +46,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 - **Hero** (`source/components/hero.tsx`): Welcome/branding display
 - **Loading** (`source/components/loading.tsx`): Loading indicator with token progress display
 - **Markdown** (`source/components/markdown.tsx`): Markdown rendering component
+- **ToolPermission** (`source/components/ToolPermission.tsx`): Interactive permission prompt component for tool execution approval
 
 #### Custom Hooks
 
@@ -53,9 +55,11 @@ The codebase follows a modular architecture with clear separation of concerns:
 
 #### Services Layer (Framework-Agnostic Core)
 
-- **ConversationService** (`source/services/conversation-service.ts`): Framework-agnostic conversation engine using generic callback interfaces. Handles AI interactions, tool calling, and conversation flow
+- **ConversationService** (`source/services/conversation-service.ts`): Framework-agnostic conversation engine using generic callback interfaces. Handles AI interactions and conversation flow, delegating tool execution to ToolExecutionManager
 - **MistralService** (`source/services/mistral-service.ts`): Manages Mistral AI client and streaming responses using configurable model (defaults to `mistral-medium-2508`)
 - **ToolManager** (`source/services/tool-manager.ts`): Manages built-in tools, handles tool registration and execution
+- **ToolExecutionManager** (`source/services/tool-execution-manager.ts`): Handles permission checking, tool execution coordination, and synthetic message generation for denied tools
+- **PermissionStorage** (`source/services/permission-storage.ts`): Manages session-based storage of user tool permissions in memory
 - **SecretsService** (`source/services/secrets-service.ts`): Secure API key storage via system keychain (keytar)
 
 #### Command System
@@ -197,6 +201,56 @@ Current todos:
 - **Focus Management**: Prevents context loss during complex tasks
 - **User Transparency**: Clear visibility into AI's task planning and execution
 
+### Tool Permission System
+
+The application includes a comprehensive permission system that prompts users before executing potentially unsafe tools in interactive mode while maintaining automatic execution in print mode.
+
+#### Architecture
+
+**Core Components**:
+
+- **ToolExecutionManager** (`source/services/tool-execution-manager.ts`): Central service that handles permission checking, tool execution coordination, and synthetic message generation
+- **PermissionStorage** (`source/services/permission-storage.ts`): Manages session-based storage of user tool permissions
+- **ToolPermission** (`source/components/ToolPermission.tsx`): Interactive UI component providing permission prompts with options for individual approval or session-wide approval
+- **ConversationService** (`source/services/conversation-service.ts`): Integrates permission flow with conversation handling via ToolExecutionManager
+
+#### Permission Flow
+
+**Safe Tool Allowlist**: Read-only tools execute without permission prompts:
+- `glob`, `grep`, `ls`, `read`, `todo-write`, `web-fetch` (read-only operations)
+
+**Unsafe Tool Processing**: Write operations require user permission:
+- `edit`, `multi-edit`, `write` and other tools that modify the system
+
+**Permission Options**: Users can choose from two permission levels:
+- **Just this time**: Allow tool execution once
+- **For this session**: Allow tool for the duration of the current session
+
+**Batch Handling**: Uses fail-fast strategy where denying any unsafe tool in a multi-tool request rejects all tools in the batch.
+
+#### Implementation Details
+
+**Permission Storage**:
+- Session-based permissions stored in memory only
+- No persistent storage across application restarts
+- Clean slate for each new session
+
+**Message Flow Integrity**: 
+- Generates synthetic tool result messages for denied tools to maintain proper Mistral API conversation structure
+- Creates synthetic assistant acknowledgments when tools are rejected
+- Ensures every tool call has a corresponding tool result to prevent API errors
+
+**Mode Behavior**:
+- **Interactive Mode**: Full permission prompts with UI components
+- **Print Mode**: Auto-executes all tools without prompts (preserves UNIX tool behavior)
+
+#### Benefits
+
+- **User Control**: Fine-grained control over which tools can execute
+- **Security**: Prevents unauthorized file system modifications
+- **Session Flexibility**: Allow tools for entire session duration without repeated prompts
+- **API Integrity**: Maintains proper conversation structure with synthetic messages
+
 ### Interrupt Handling System
 
 The application provides ESC key interrupt functionality that allows users to stop running operations while maintaining conversation integrity.
@@ -276,6 +330,7 @@ Features:
 - Full React-based terminal UI with Ink
 - Real-time streaming responses
 - ESC key interrupt handling
+- Tool permission prompts for unsafe operations
 - Slash commands (`/help`, `/usage`, `/logout`, `/exit`, `/quit`)
 - API key storage via system keychain
 - Session state management

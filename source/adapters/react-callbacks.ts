@@ -4,6 +4,8 @@ import type {
 	ConversationCallbacks,
 	CommandCallbacks,
 	ConversationEntry,
+	ToolPermissionRequest,
+	PermissionDecision,
 } from '../types/callbacks.js';
 import type {MistralMessage} from '../types/mistral.js';
 import {deleteSecret} from '../services/secrets-service.js';
@@ -23,6 +25,9 @@ export function createReactConversationCallbacks(reactCallbacks: {
 	updateTokenCount?: (tokens: number) => void;
 	checkInterruption?: () => boolean;
 	createAbortController: () => AbortController;
+	requestToolPermission?: (
+		request: ToolPermissionRequest,
+	) => Promise<PermissionDecision>;
 }): ConversationCallbacks {
 	return {
 		onError(error) {
@@ -38,6 +43,7 @@ export function createReactConversationCallbacks(reactCallbacks: {
 		onLoadingChange: reactCallbacks.setIsLoading,
 		onTokenProgress: reactCallbacks.updateTokenCount,
 		onInterruptionCheck: reactCallbacks.checkInterruption,
+		onToolPermissionRequest: reactCallbacks.requestToolPermission,
 	};
 }
 

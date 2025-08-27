@@ -1,6 +1,8 @@
 import type {
 	ConversationCallbacks,
 	ConversationEntry,
+	ToolPermissionRequest,
+	PermissionDecision,
 } from '../types/callbacks.js';
 
 /**
@@ -42,5 +44,7 @@ export function createPrintModeCallbacks(): ConversationCallbacks & {
 		onLoadingChange: undefined,
 		onTokenProgress: undefined,
 		onInterruptionCheck: () => false, // Never interrupt in print mode
+		onToolPermissionRequest: async (_request: ToolPermissionRequest) =>
+			'once' as PermissionDecision, // Auto-approve all tools in print mode
 	};
 }
