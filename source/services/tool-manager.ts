@@ -18,6 +18,7 @@ import {
 	handleTodoWriteTool,
 	type TodoItem,
 } from '../tools/todo-write.js';
+import {bashTool, handleBashTool} from '../tools/bash.js';
 
 export class ToolManager {
 	private readonly tools = new Map<string, MistralTool>();
@@ -37,6 +38,7 @@ export class ToolManager {
 		this.registerTool(globTool, handleGlobTool);
 		this.registerTool(grepTool, handleGrepTool);
 		this.registerTool(webFetchTool, handleWebFetchTool);
+		this.registerTool(bashTool, handleBashTool);
 		this.registerTodoWriteTool();
 	}
 

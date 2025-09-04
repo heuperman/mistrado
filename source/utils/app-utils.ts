@@ -51,6 +51,7 @@ export function formatToolCallDisplay(
 		}
 
 		const pathArgumentMap: Record<string, string> = {
+			bash: 'command',
 			read: 'filePath',
 			write: 'filePath',
 			edit: 'filePath',

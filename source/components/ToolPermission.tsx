@@ -65,10 +65,12 @@ const formatToolContext = (
 
 			case 'bash': {
 				const command = args['command'] as string;
-				const firstCommand = command.split(/\s+/)[0];
+				const firstTwoCommands = command
+					? command.split(/\s+/).slice(0, 2).join(' ')
+					: undefined;
 				return {
 					context: command ?? 'No command provided',
-					details: `Do you want to allow Mistrado to run **${firstCommand}**`,
+					details: `Do you want to allow Mistrado to run **${firstTwoCommands}**`,
 				};
 			}
 
