@@ -1,11 +1,12 @@
 import React from 'react';
 import {Box, Text} from 'ink';
+import {colors} from '../utils/colors.js';
 
 export default function Hero() {
 	return (
 		<Box
 			width={60}
-			borderColor="blue"
+			borderColor={colors.blue}
 			borderStyle="round"
 			flexDirection="column"
 			gap={1}
@@ -16,7 +17,9 @@ export default function Hero() {
 			<Text color="white">
 				Describe a task or ask a question to get started
 			</Text>
-			<Text color="grey">/help for help, /exit or /quit to exit</Text>
+			<Text color={colors.brightBlue}>
+				/help for help, /exit or /quit to exit
+			</Text>
 		</Box>
 	);
 }

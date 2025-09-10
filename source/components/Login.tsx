@@ -3,6 +3,7 @@ import React, {useState} from 'react';
 import {Box, Text} from 'ink';
 import {UncontrolledTextInput} from 'ink-text-input';
 import {setSecret} from '../services/secrets-service.js';
+import {colors} from '../utils/colors.js';
 
 type ApiKeyInputProps = {
 	readonly setApiKey: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -39,12 +40,32 @@ export default function Login({setApiKey}: ApiKeyInputProps) {
 	};
 
 	return (
-		<Box flexDirection="column" paddingX={2} gap={1}>
-			<Text color="blue">Welcome to Mistrado!</Text>
-			<Text>Please enter your Mistral API Key to get started:</Text>
-			{isLoading ? <Text color="blue">Storing key...</Text> : null}
-			{error ? <Text color="red">{error}</Text> : null}
-			<Box width="100%" gap={1} borderColor="grey" borderStyle="round">
+		<Box width="100%" flexDirection="column" gap={1}>
+			<Box
+				width={60}
+				borderColor={colors.blue}
+				borderStyle="round"
+				flexDirection="column"
+				gap={1}
+				paddingX={2}
+				paddingY={1}
+			>
+				<Text color="white">Welcome to Mistrado!</Text>
+				<Text color="white">
+					Please enter your Mistral API Key to get started
+				</Text>
+				{isLoading ? (
+					<Text color={colors.brightBlue}>Storing key...</Text>
+				) : null}
+				{error ? <Text color={colors.red}>{error}</Text> : null}
+			</Box>
+			<Box
+				width="100%"
+				gap={1}
+				paddingX={1}
+				borderColor={colors.brightBlack}
+				borderStyle="round"
+			>
 				<Text>&gt;</Text>
 				<UncontrolledTextInput mask="*" onSubmit={handleSubmit} />
 			</Box>

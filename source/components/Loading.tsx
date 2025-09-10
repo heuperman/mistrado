@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Text} from 'ink';
+import {colors} from '../utils/colors.js';
 
 type LoadingProps = {
 	readonly completionTokens?: number;
@@ -73,9 +74,9 @@ export default function Loading({completionTokens = 0}: LoadingProps) {
 
 	return (
 		<Box gap={1}>
-			<Text color="blue">{loadingIndicator}</Text>
-			<Text color="blue">Pondering...</Text>
-			<Text color="grey">{formatProgress()}</Text>
+			<Text color={colors.magenta}>{loadingIndicator}</Text>
+			<Text color={colors.magenta}>Pondering...</Text>
+			<Text color={colors.brightMagenta}>{formatProgress()}</Text>
 		</Box>
 	);
 }

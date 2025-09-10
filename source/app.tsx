@@ -14,6 +14,7 @@ import {
 	createReactConversationCallbacks,
 	createReactCommandCallbacks,
 } from './adapters/react-callbacks.js';
+import {colors} from './utils/colors.js';
 
 const commandHandler = new CommandHandler();
 const conversationService = new ConversationService();
@@ -256,7 +257,7 @@ export default function App({initialPrompt}: AppProps = {}) {
 				width="100%"
 				gap={1}
 				paddingX={1}
-				borderColor="grey"
+				borderColor={colors.brightBlack}
 				borderStyle="round"
 			>
 				<Text>&gt;</Text>

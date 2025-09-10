@@ -1,6 +1,7 @@
 import React from 'react';
 import {Box, Text} from 'ink';
 import type {ConversationEntry, ToolCallStatus} from '../types/callbacks.js';
+import {colors} from '../utils/colors.js';
 import Loading from './Loading.js';
 import Markdown from './Markdown.js';
 
@@ -18,9 +19,9 @@ export default function Conversation({
 	currentTokenCount,
 }: ConversationProps) {
 	const getStatusColor = (status: ToolCallStatus | undefined) => {
-		if (status === 'error') return 'red';
-		if (status === 'success') return 'green';
-		if (status === 'running') return 'blue';
+		if (status === 'error') return colors.red;
+		if (status === 'success') return colors.green;
+		if (status === 'running') return colors.magenta;
 		return 'white';
 	};
 
@@ -30,9 +31,9 @@ export default function Conversation({
 				<Box key={entry.id}>
 					{entry.type === 'user' && (
 						<Box flexDirection="row" paddingLeft={0}>
-							<Text color="gray">&gt; </Text>
+							<Text color={colors.white}>&gt; </Text>
 							<Box flexGrow={1}>
-								<Text color="gray">{entry.content}</Text>
+								<Text color={colors.white}>{entry.content}</Text>
 							</Box>
 						</Box>
 					)}
@@ -52,7 +53,9 @@ export default function Conversation({
 				</Box>
 			))}
 			{isLoading ? <Loading completionTokens={currentTokenCount} /> : null}
-			{errorOutput ? <Text color="red">Error: {errorOutput}</Text> : null}
+			{errorOutput ? (
+				<Text color={colors.red}>Error: {errorOutput}</Text>
+			) : null}
 		</>
 	);
 }

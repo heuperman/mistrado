@@ -7,6 +7,7 @@ import type {
 	ToolPermissionRequest,
 	PermissionDecision,
 } from '../types/callbacks.js';
+import {colors} from '../utils/colors.js';
 import Markdown from './Markdown.js';
 
 type ToolPermissionProps = {
@@ -137,10 +138,10 @@ export default function ToolPermission({
 		<Box
 			flexDirection="column"
 			borderStyle="round"
-			borderColor="yellow"
+			borderColor={colors.magenta}
 			paddingX={1}
 		>
-			<Text bold color="yellow">
+			<Text bold color={colors.magenta}>
 				{toolName}
 			</Text>
 			<Box flexDirection="column" padding={1}>
