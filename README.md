@@ -2,10 +2,10 @@
 
 Mistrado is a terminal-based coding assistant powered by Mistral's AI model, (heavily) inspired by Claude Code. Use Mistral's models from the terminal to write and explain code.
 
-I created this tool because I love the fast, cheap and capable models Mistral provides. I also love Claude Code for its excellent product features. This is my attempt to combine the two and encourage Mistral to create their own CLI tool by showing what is possible.
+I created this tool because I love the fast, cheap and capable models Mistral provides. I also love Claude Code for its excellent product features. This is my attempt to combine the two ~~and encourage Mistral to create their own CLI tool by showing what is possible~~.
 
 > [!NOTE]
-> Mistrado includes a permission system that prompts you before executing file modification tools. Read-only operations (like viewing files or searching) execute automatically, while write operations require your approval.
+> Mistral did actually release their terminal-based agentic coding tool, Mistral Vibe, not long after I started this project. You will probably want to use that instead. You can [find more details on the Mistral website](https://mistral.ai/products/vibe).
 
 ## Features
 
